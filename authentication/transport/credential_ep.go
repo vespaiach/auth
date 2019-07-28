@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/vespaiach/auth/service"
+	"github.com/vespaiach/authentication/service"
 )
 
 type verifyLoginRequest struct {

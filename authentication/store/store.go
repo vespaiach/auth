@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/jinzhu/gorm"
-	"github.com/vespaiach/auth/config"
+	"github.com/vespaiach/authentication/config"
 )
 
 // ErrDataNotFound returns an error of data not found

@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/google/uuid"
-	"github.com/vespaiach/auth/store"
+	"github.com/vespaiach/authentication/store"
 	"golang.org/x/crypto/bcrypt"
 )
 

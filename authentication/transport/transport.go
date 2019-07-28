@@ -9,8 +9,8 @@ import (
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/transport"
 	kithttp "github.com/go-kit/kit/transport/http"
-	"github.com/vespaiach/auth/service"
-	"github.com/vespaiach/auth/store"
+	"github.com/vespaiach/authentication/service"
+	"github.com/vespaiach/authentication/store"
 
 	"github.com/gorilla/mux"
 )

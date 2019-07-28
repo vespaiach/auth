@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -44,43 +45,43 @@ type ServiceConfig struct {
 func LoadConfig() (config *ServiceConfig, err error) {
 	PrivateKeyPath := os.Getenv("PRIVATE_KEY_PATH")
 	if len(PrivateKeyPath) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: PRIVATE_KEY_PATH"))
 		PrivateKeyPath = defaultPrivateKeyPath
 	}
 
 	PublicKeyPath := os.Getenv("PUBLIC_KEY_PATH")
 	if len(PublicKeyPath) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: PUBLIC_KEY_PATH"))
 		PublicKeyPath = defaultPublicKeyPath
 	}
 
 	DbHost := os.Getenv("DB_HOST")
 	if len(DbHost) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: DB_HOST"))
 		DbHost = defaultDbhost
 	}
 
 	DbPort := os.Getenv("DB_PORT")
 	if len(DbPort) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: DB_PORT"))
 		DbPort = defaultDbport
 	}
 
 	DbName := os.Getenv("DB_NAME")
 	if len(DbName) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: DB_NAME"))
 		DbName = defaultDbname
 	}
 
 	DbUser := os.Getenv("DB_USER")
 	if len(DbUser) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: DB_USER"))
 		DbUser = defaultDbuser
 	}
 
 	DbPass := os.Getenv("DB_PASS")
 	if len(DbPass) == 0 {
-		fmt.Println(err)
+		fmt.Println(errors.New("not found environment variable named: DB_PASS"))
 		DbPass = defaultDbpass
 	}
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/jinzhu/gorm"
-	"github.com/vespaiach/auth/config"
-	"github.com/vespaiach/auth/store"
+	"github.com/vespaiach/authentication/config"
+	"github.com/vespaiach/authentication/store"
 )
 
 // ErrCredentialNotMatch username or password is wrong

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/vespaiach/auth/service"
-	"github.com/vespaiach/auth/store"
+	"github.com/vespaiach/authentication/service"
+	"github.com/vespaiach/authentication/store"
 )
 
 type loggingService struct {

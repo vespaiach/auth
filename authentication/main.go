@@ -10,10 +10,10 @@ import (
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/vespaiach/auth/config"
-	"github.com/vespaiach/auth/logging"
-	"github.com/vespaiach/auth/service"
-	"github.com/vespaiach/auth/transport"
+	"github.com/vespaiach/authentication/config"
+	"github.com/vespaiach/authentication/logging"
+	"github.com/vespaiach/authentication/service"
+	"github.com/vespaiach/authentication/transport"
 )
 
 func main() {

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	jwtgo "github.com/dgrijalva/jwt-go"
-	"github.com/vespaiach/auth/config"
-	"github.com/vespaiach/auth/store"
+	"github.com/vespaiach/authentication/config"
+	"github.com/vespaiach/authentication/store"
 )
 
 var (
