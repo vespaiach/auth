@@ -27,14 +27,22 @@ func MakeHandler(auth service.Service, logger kitlog.Logger) http.Handler {
 		kithttp.ServerErrorEncoder(encodeError),
 	}
 
-	loginHandler := kithttp.NewServer(
+	verifyLoginHandler := kithttp.NewServer(
 		makeVerifyLoginEndpoint(auth),
 		decodeVerifyLoginRequest,
 		encodeResponse,
 		opts...,
 	)
 
-	r.Handle("/users/v1/login", loginHandler).Methods("POST")
+	registerUserHandler := kithttp.NewServer(
+		makeRegisterUserEndpoint(auth),
+		decodeVerifyLoginRequest,
+		encodeResponse,
+		opts...,
+	)
+
+	r.Handle("/users/v1/login", verifyLoginHandler).Methods("POST")
+	r.Handle("/users/v1/create", registerUserHandler).Methods("POST")
 
 	return r
 }
