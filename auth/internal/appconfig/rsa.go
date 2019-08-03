@@ -4,6 +4,8 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"log"
+	"path"
+	"path/filepath"
 
 	"github.com/vespaiach/auth/internal/datatypes"
 	"github.com/vespaiach/gotils"
@@ -23,6 +25,11 @@ type RsaKeyConfig struct {
 }
 
 func loadRsaConfig() (config *RsaKeyConfig, err error) {
+	appbase, e := gotils.GetEnvString("APP_DIR")
+	if e != nil {
+		appbase = defaultAppDir
+	}
+
 	PrivateKeyPath, e := gotils.GetEnvString("PRIVATE_KEY_PATH")
 	if e != nil {
 		fmt.Println(err)
@@ -35,6 +42,14 @@ func loadRsaConfig() (config *RsaKeyConfig, err error) {
 		fmt.Println(err)
 		PublicKeyPath = defaultPublicKeyPath
 		err = datatypes.ErrAppConfigMissingOrWrongSet
+	}
+
+	if !filepath.IsAbs(PublicKeyPath) {
+		PublicKeyPath = path.Join(appbase, PublicKeyPath)
+	}
+
+	if !filepath.IsAbs(PrivateKeyPath) {
+		PrivateKeyPath = path.Join(appbase, PrivateKeyPath)
 	}
 
 	PrivateKey, err := gotils.LoadRsaPrivateKey(PrivateKeyPath)
