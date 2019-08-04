@@ -1,11 +1,12 @@
 package service
 
 import (
+	"crypto/rsa"
 	"time"
 
 	jwtgo "github.com/dgrijalva/jwt-go"
-	"github.com/vespaiach/authentication/config"
-	"github.com/vespaiach/authentication/store"
+	"github.com/vespaiach/auth/internal/model"
+	"github.com/vespaiach/auth/store"
 )
 
 var (
@@ -18,8 +19,8 @@ type accessTokenMapClaims struct {
 	actions []string
 }
 
-func issueAccessToken(u *store.User, id string, config *config.ServiceConfig) (token string, err error) {
-	duration := time.Duration(config.AccessTokenDuration) * time.Minute
+func issueAccessToken(u *model.User, id string, duration int, privateKey *rsa.PrivateKey) (token string, err error) {
+	duration := time.Duration(duration) * time.Minute
 	actions := make([]string, len(u.Actions))
 
 	for _, a := range u.Actions {
@@ -47,10 +48,10 @@ func issueAccessToken(u *store.User, id string, config *config.ServiceConfig) (t
 		actions,
 	}
 
-	return accessTokenObj.SignedString(config.PrivateKey)
+	return accessTokenObj.SignedString(privateKey)
 }
 
-func issueRefreshToken(u *store.User, id string, config *config.ServiceConfig) (token string, err error) {
+func issueRefreshToken(u *store.User, id string, duration int, privateKey *rsa.PrivateKey) (token string, err error) {
 	tokenObj := jwtgo.New(jwtgo.GetSigningMethod(signingAlgorithm))
 
 	tokenObj.Claims = jwtgo.StandardClaims{
@@ -58,8 +59,8 @@ func issueRefreshToken(u *store.User, id string, config *config.ServiceConfig) (
 		Issuer:    issuer,
 		Audience:  u.Username,
 		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Duration(config.RefreshTokenDuration) * time.Minute).Unix(),
+		ExpiresAt: time.Now().Add(time.Duration(duration) * time.Minute).Unix(),
 	}
 
-	return tokenObj.SignedString(config.PrivateKey)
+	return tokenObj.SignedString(privateKey)
 }

@@ -1,9 +1,9 @@
-package appconfig
+package conf
 
 import (
 	"fmt"
 
-	"github.com/vespaiach/auth/internal/datatypes"
+	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/gotils"
 )
 
@@ -25,21 +25,21 @@ func loadTokenConfig() (config *TokenConfig, err error) {
 	if err != nil {
 		fmt.Println(err)
 		AccessTokenDuration = defaultAccessTokenDuration
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	RefreshTokenDuration, err := gotils.GetEnvInt("REFRESH_TOKEN_DURATION")
 	if err != nil {
 		fmt.Println(err)
 		RefreshTokenDuration = defaultRefreshTokenDuration
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	UseRefreshToken, err := gotils.GetEnvBool("USE_REFRESH_TOKEN")
 	if err != nil {
 		fmt.Println(err)
 		UseRefreshToken = defaultUseRefreshToken
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	config = &TokenConfig{

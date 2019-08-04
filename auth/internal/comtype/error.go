@@ -1,4 +1,4 @@
-package datatypes
+package comtype
 
 import "errors"
 
@@ -17,4 +17,5 @@ var (
 // Define all app common errors
 var (
 	ErrAppConfigMissingOrWrongSet = errors.New("app configurations are missing or wrong")
+	ErrCredentialNotMatch         = errors.New("username or password is not valid")
 )

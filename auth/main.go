@@ -63,10 +63,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/vespaiach/auth/internal/appconfig"
+	"github.com/vespaiach/auth/internal/conf"
 )
 
 func main() {
-	app := appconfig.LoadAppConfig()
+	app := conf.LoadAppConfig()
 	fmt.Println(app)
 }

@@ -11,16 +11,17 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/mysql"
+	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/jinzhu/gorm"
-	"github.com/vespaiach/auth/internal/appconfig"
+	"github.com/vespaiach/auth/internal/conf"
 )
 
 var repos *MysqlAppRepo
-var config *appconfig.AppConfig
+var config *conf.AppConfig
 
 // TestMain is the main entry for all tests
 func TestMain(m *testing.M) {
-	config = appconfig.LoadAppConfig()
+	config = conf.LoadAppConfig()
 
 	db, _ := initDb(config.DbConfig)
 	defer db.Close()
@@ -31,7 +32,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func initDb(config *appconfig.DbConfig) (*gorm.DB, error) {
+func initDb(config *conf.DbConfig) (*gorm.DB, error) {
 	db, err := gorm.Open("mysql", config.BuildMysqlDSN())
 
 	if err != nil {
@@ -42,6 +43,7 @@ func initDb(config *appconfig.DbConfig) (*gorm.DB, error) {
 }
 
 func prepareFixtures(testName string) *sql.DB {
+	fmt.Println(config.DbConfig.BuildMysqlDSN())
 	db, err := sql.Open("mysql", config.DbConfig.BuildMysqlDSN())
 	if err != nil {
 		log.Fatalf("could not connect to the MySQL database... %v", err)

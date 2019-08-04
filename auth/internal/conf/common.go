@@ -1,4 +1,4 @@
-package appconfig
+package conf
 
 import (
 	"fmt"

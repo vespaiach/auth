@@ -1,9 +1,9 @@
-package appconfig
+package conf
 
 import (
 	"fmt"
 
-	"github.com/vespaiach/auth/internal/datatypes"
+	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/gotils"
 )
 
@@ -38,42 +38,42 @@ func loadDbConfig() (config *DbConfig, err error) {
 	if e != nil {
 		fmt.Println(e)
 		DbHost = defaultDbhost
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbPort, e := gotils.GetEnvString("DB_PORT")
 	if e != nil {
 		fmt.Println(e)
 		DbPort = defaultDbport
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbName, e := gotils.GetEnvString("DB_NAME")
 	if e != nil {
 		fmt.Println(e)
 		DbName = defaultDbname
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbUser, e := gotils.GetEnvString("DB_USER")
 	if e != nil {
 		fmt.Println(e)
 		DbUser = defaultDbuser
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbPass, e := gotils.GetEnvString("DB_PASS")
 	if e != nil {
 		fmt.Println(e)
 		DbPass = defaultDbpass
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbOption, e := gotils.GetEnvString("DB_OPTION")
 	if e != nil {
 		fmt.Println(e)
 		DbPass = defaultDbpass
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	config = &DbConfig{

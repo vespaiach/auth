@@ -2,12 +2,12 @@ package mysqlrepo
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/vespaiach/auth/internal/models"
+	"github.com/vespaiach/auth/internal/model"
 )
 
 // MysqlAppRepo return all repos implemented by mysql
 type MysqlAppRepo struct {
-	UserRepo models.UserRepo
+	UserRepo model.UserRepo
 }
 
 // NewMysqlAppRepo inits all repos

@@ -1,4 +1,4 @@
-package appconfig
+package conf
 
 import (
 	"crypto/rsa"
@@ -7,7 +7,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/vespaiach/auth/internal/datatypes"
+	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/gotils"
 )
 
@@ -34,14 +34,14 @@ func loadRsaConfig() (config *RsaKeyConfig, err error) {
 	if e != nil {
 		fmt.Println(err)
 		PrivateKeyPath = defaultPrivateKeyPath
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	PublicKeyPath, e := gotils.GetEnvString("PUBLIC_KEY_PATH")
 	if e != nil {
 		fmt.Println(err)
 		PublicKeyPath = defaultPublicKeyPath
-		err = datatypes.ErrAppConfigMissingOrWrongSet
+		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	if !filepath.IsAbs(PublicKeyPath) {

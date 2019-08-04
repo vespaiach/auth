@@ -1,9 +1,9 @@
-package models
+package model
 
 import (
 	"time"
 
-	"github.com/vespaiach/auth/internal/datatypes"
+	"github.com/vespaiach/auth/internal/comtype"
 )
 
 // User model
@@ -39,5 +39,5 @@ type UserRepo interface {
 	Update(id uint, fields map[string]interface{}) error
 
 	// Query a list of users
-	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]datatypes.SortDirection) ([]*User, error)
+	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*User, error)
 }

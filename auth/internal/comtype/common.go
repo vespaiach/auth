@@ -1,4 +1,4 @@
-package datatypes
+package comtype
 
 // ActivateStatus will have value: 1, 2, 3
 type ActivateStatus int
