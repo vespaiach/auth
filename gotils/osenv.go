@@ -7,6 +7,17 @@ import (
 	"strings"
 )
 
+// GetEnvString get environment variable.
+func GetEnvString(name string) (val string, err error) {
+	val = os.Getenv(name)
+
+	if len(val) == 0 {
+		err = errors.New("not found environment variable named: " + name)
+	}
+
+	return
+}
+
 // GetEnvInt get environment variable and convert it to int type.
 func GetEnvInt(name string) (val int, err error) {
 	valenv := os.Getenv(name)
