@@ -65,6 +65,7 @@ func (repo *MysqlUserRepo) Create(fullName string, username string, hashed strin
 		Hashed:   hashed,
 		Email:    email,
 	}
+
 	repo.DbClient.Create(&user)
 
 	if repo.DbClient.NewRecord(user) {
