@@ -1,10 +1,12 @@
 package mysqlrepo
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/vespaiach/auth/internal/comtype"
+	"github.com/vespaiach/auth/internal/model"
 )
 
 func loadUserfixtures() {
@@ -12,8 +14,8 @@ func loadUserfixtures() {
 
 	i := 0
 	for i < 20 {
-		a := string(i)
-		testApp.db.Exec("INSERT INTO `authentication`.`users`(full_name, username, hashed, email) VALUES (?, ?, ?, ?)", "Toan "+a, "toan_"+a, "hased_"+a, "email_"+a)
+		a := strconv.Itoa(i)
+		testApp.db.Exec("INSERT INTO `authentication`.`users`(full_name, username, hashed, email) VALUES (?, ?, ?, ?)", "Toan "+a, "toan_"+a, "hashed_"+a, "email_"+a)
 		i++
 	}
 
@@ -50,15 +52,29 @@ func TestUserRepo(tInst *testing.T) {
 
 		loadUserfixtures()
 
-		t.Run("list_user_sucess", func(t *testing.T) {
-			users, err := testApp.repos.UserRepo.Query(1, 10, map[string]interface{}{}, map[string]comtype.SortDirection{})
+		var user1 *model.User
+
+		t.Run("query_user_by_full_name_success", func(t *testing.T) {
+			filter := map[string]interface{}{"full_name": "Toan 1"}
+			users, total, err := testApp.repos.UserRepo.Query(1, 10, filter, map[string]comtype.SortDirection{})
 
 			require.Nil(t, err)
 			require.NotNil(t, users)
-			require.Equal(t, len(users), 10)
+			require.Len(t, users, 10)
+			require.Equal(t, total, int64(11))
 		})
 
-		t.Run("create_user_sucess", func(t *testing.T) {
+		t.Run("query_user_by_email_success", func(t *testing.T) {
+			filter := map[string]interface{}{"email": "Ema"}
+			users, total, err := testApp.repos.UserRepo.Query(1, 5, filter, map[string]comtype.SortDirection{})
+
+			require.Nil(t, err)
+			require.NotNil(t, users)
+			require.Len(t, users, 5)
+			require.Equal(t, total, int64(20))
+		})
+
+		t.Run("create_user_success", func(t *testing.T) {
 			user, err := testApp.repos.UserRepo.Create("Toan Nguyen", "username1", "123", "nta.toan@gmil.com")
 
 			require.Nil(t, err)
@@ -66,5 +82,44 @@ func TestUserRepo(tInst *testing.T) {
 			require.NotZero(t, user.ID)
 		})
 
+		t.Run("get_user_by_username_success", func(t *testing.T) {
+			var er error
+			user1, er = testApp.repos.UserRepo.GetByUsername("toan_1")
+
+			require.Nil(t, er)
+			require.NotNil(t, user1)
+			require.Equal(t, user1.FullName, "Toan 1")
+			require.Equal(t, user1.Hashed, "hashed_1")
+			require.Equal(t, user1.Email, "email_1")
+		})
+
+		t.Run("get_user_by_id_success", func(t *testing.T) {
+			user, err := testApp.repos.UserRepo.GetByID(user1.ID)
+
+			require.Nil(t, err)
+			require.NotNil(t, user)
+			require.Equal(t, user.ID, user1.ID)
+		})
+
+		t.Run("get_user_by_email_success", func(t *testing.T) {
+			user, err := testApp.repos.UserRepo.GetByEmail(user1.Email)
+
+			require.Nil(t, err)
+			require.NotNil(t, user)
+			require.Equal(t, user.ID, user1.ID)
+		})
+
+		t.Run("update_user_success", func(t *testing.T) {
+			updating := map[string]interface{}{
+				"full_name": "changed",
+				"email":     "changed",
+				"hashed":    "changed",
+				"active":    false,
+				"verified":  true,
+			}
+			err := testApp.repos.UserRepo.Update(user1.ID, updating)
+
+			require.Nil(t, err)
+		})
 	})
 }

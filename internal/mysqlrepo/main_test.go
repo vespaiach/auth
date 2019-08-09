@@ -58,6 +58,7 @@ func execSQL(query string) {
 
 func initDb(config *conf.DbConfig) (*gorm.DB, error) {
 	db, err := gorm.Open("mysql", config.BuildMysqlDSN())
+	db.LogMode(true)
 
 	if err != nil {
 		return nil, err

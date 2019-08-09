@@ -1,6 +1,8 @@
 package mysqlrepo
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/model"
@@ -82,15 +84,18 @@ func (repo *MysqlUserRepo) Update(id uint, fields map[string]interface{}) (err e
 		return err
 	}
 
+	fields["updated_at"] = time.Now()
+
 	repo.DbClient.Model(&user).Updates(fields)
 
 	return nil
 }
 
 // Query a list of users
-func (repo *MysqlUserRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.User, error) {
+func (repo *MysqlUserRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.User, int64, error) {
 	db := repo.DbClient.Model(&model.User{})
 
+	var total int64
 	users := []*model.User{}
 	offset := perPage * (page - 1)
 
@@ -108,11 +113,11 @@ func (repo *MysqlUserRepo) Query(page int, perPage int, filters map[string]inter
 				if good {
 					db = db.Where(k+" LIKE ?", s+"%")
 				} else {
-					return nil, comtype.ErrDataTypeMismatch
+					return nil, 0, comtype.ErrDataTypeMismatch
 				}
 			}
 		} else {
-			return nil, comtype.ErrNotAllowField
+			return nil, 0, comtype.ErrNotAllowField
 		}
 	}
 
@@ -125,14 +130,15 @@ func (repo *MysqlUserRepo) Query(page int, perPage int, filters map[string]inter
 				db = db.Order(k + " desc")
 			}
 		} else {
-			return nil, comtype.ErrNotAllowField
+			return nil, 0, comtype.ErrNotAllowField
 		}
 	}
 
 	db.
 		Offset(offset).
 		Limit(perPage).
+		Count(&total).
 		Find(&users)
 
-	return users, nil
+	return users, total, nil
 }
