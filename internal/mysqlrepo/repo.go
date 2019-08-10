@@ -7,12 +7,14 @@ import (
 
 // MysqlAppRepo return all repos implemented by mysql
 type MysqlAppRepo struct {
-	UserRepo model.UserRepo
+	UserRepo   model.UserRepo
+	ActionRepo model.ActionRepo
 }
 
 // NewMysqlAppRepo inits all repos
 func NewMysqlAppRepo(db *gorm.DB) *MysqlAppRepo {
 	return &MysqlAppRepo{
-		UserRepo: NewMysqlUserRepo(db),
+		UserRepo:   NewMysqlUserRepo(db),
+		ActionRepo: NewMysqlActionRepo(db),
 	}
 }
