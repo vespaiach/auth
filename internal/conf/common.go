@@ -1,9 +1,9 @@
 package conf
 
 import (
-	"fmt"
-
-	"github.com/vespaiach/gotils"
+	log "github.com/sirupsen/logrus"
+	"github.com/vespaiach/auth/pkg/gotils"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var (
@@ -23,19 +23,20 @@ type AppConfig struct {
 	RsaKeyConfig *RsaKeyConfig
 	TokenConfig  *TokenConfig
 	CommonConfig *CommonConfig
+	Validator    *validator.Validate
 }
 
 // LoadAppConfig returns service's configuration
 func LoadAppConfig() *AppConfig {
 	BcryptCost, err := gotils.GetEnvInt("BCRYPT_COST")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		BcryptCost = defaultBcryptCost
 	}
 
 	AppDir, err := gotils.GetEnvString("APP_DIR")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		AppDir = defaultAppDir
 	}
 
@@ -47,11 +48,14 @@ func LoadAppConfig() *AppConfig {
 		AppDir,
 	}
 
+	v := validator.New()
+
 	config := &AppConfig{
 		dbConfig,
 		rsaKeyConfig,
 		tokenConfig,
 		commonConfig,
+		v,
 	}
 
 	return config

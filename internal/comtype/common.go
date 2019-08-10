@@ -18,3 +18,6 @@ const (
 	Ascending SortDirection = iota
 	Decending
 )
+
+// Key is a general Key type
+type Key string

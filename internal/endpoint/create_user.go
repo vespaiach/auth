@@ -7,15 +7,16 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/examples/shipping/cargo"
+	"github.com/vespaiach/auth/internal/conf"
 	"github.com/vespaiach/auth/internal/service"
 )
 
 type createUserRequest struct {
-	FullName   string `json:"full_name" validate:"required,lt=64"`
-	Username   string `json:"username" validate:"required,lt=64"`
-	Email      string `json:"email" validate:"required,email"`
-	Password   string `json:"password" validate:"required,gt=8"`
-	Repassword string `json:"repassword" validate:"required,gt=8"`
+	FullName string `json:"full_name" validate:"required,lt=64"`
+	Username string `json:"username" validate:"required,lt=64"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,gt=8"`
 }
 
 type createUserResponse struct {
@@ -28,13 +29,24 @@ type createUserResponse struct {
 	Error     error     `json:"error,omitempty"`
 }
 
-func decodeCreateUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	body := createUserRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		return nil, err
-	}
+func decodeValidateCreateUserRequest(appConfig *conf.AppConfig) func(context.Context, *http.Request) (interface{}, error) {
+	return func(ctx context.Context, r *http.Request) (interface{}, error) {
+		var body createUserRequest
 
-	return body, nil
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			return nil, err
+		}
+
+		// if err := appConfig.Validator.Struct(body); err != nil {
+		// 	return nil, err
+		// }
+
+		return body, nil
+	}
+}
+
+type errorer interface {
+	error() error
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -46,10 +58,29 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	return json.NewEncoder(w).Encode(response)
 }
 
-func makeCreateUserEndpoint(s service.IUserService) endpoint.Endpoint {
+// encode errors from business-logic
+func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	switch err {
+	case cargo.ErrUnknown:
+		w.WriteHeader(http.StatusNotFound)
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": err.Error(),
+	})
+}
+
+func makeCreateUserEndpoint(s service.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createUserRequest)
+
 		user, err := s.RegisterUser(req.FullName, req.Username, req.Email, req.Password)
+		if err != nil {
+			return nil, err
+		}
+
 		return createUserResponse{
 			user.ID,
 			user.FullName,

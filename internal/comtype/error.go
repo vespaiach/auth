@@ -4,8 +4,10 @@ import "errors"
 
 // Define all database errors
 var (
-	ErrDataNotFound    = errors.New("not found data")
-	ErrCreadDataFailed = errors.New("can't create data")
+	ErrDataNotFound     = errors.New("not found data")
+	ErrCreateDataFailed = errors.New("created data failed")
+	ErrUpdateDataFailed = errors.New("updated data failed")
+	ErrQueryDataFailed  = errors.New("queried data failed")
 )
 
 // Define all datatype errors

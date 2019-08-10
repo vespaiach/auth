@@ -42,7 +42,7 @@ func (repo *MysqlTokenRepo) Save(id string, userID uint, accessToken string, ref
 	repo.DbClient.Create(&token)
 
 	if repo.DbClient.NewRecord(token) {
-		return comtype.ErrCreadDataFailed
+		return comtype.ErrCreateDataFailed
 	}
 
 	return nil

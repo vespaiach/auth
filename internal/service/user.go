@@ -1,15 +1,14 @@
 package service
 
 import (
-	"github.com/google/uuid"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/conf"
 	"github.com/vespaiach/auth/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// IUserService is the interface that provides user's methods.
-type IUserService interface {
+// UserService is the interface that provides user's methods.
+type UserService interface {
 
 	// VerifyLogin method will return user entity
 	VerifyLogin(username string, password string) (*model.User, error)
@@ -18,7 +17,7 @@ type IUserService interface {
 	IssueTokens(user *model.User) (*Credential, error)
 
 	// RegisterUser method to add new user
-	RegisterUser(name string, username string, password string, email string) (*model.User, error)
+	RegisterUser(fullName string, username string, password string, email string) (*model.User, error)
 }
 
 // Credential is model for user's authentication
@@ -29,7 +28,15 @@ type Credential struct {
 
 type userService struct {
 	appConfig *conf.AppConfig
-	appRepo   model.AppRepo
+	appRepo   *model.AppRepo
+}
+
+// NewUserService creates a struct that implement IUserService
+func NewUserService(appRepo *model.AppRepo, appConfig *conf.AppConfig) UserService {
+	return &userService{
+		appConfig,
+		appRepo,
+	}
 }
 
 func (s *userService) VerifyLogin(username string, password string) (user *model.User, err error) {
@@ -46,37 +53,38 @@ func (s *userService) VerifyLogin(username string, password string) (user *model
 }
 
 func (s *userService) IssueTokens(u *model.User) (*Credential, error) {
-	id := uuid.New().String()
-	rsaConfig := s.AppConfig.RsaKeyConfig
-	tokenConfig := s.AppConfig.TokenConfig
-	repo := s.AppRepo.UserRepo
-	tkrepo := s.AppRepo.TokenRepo
+	// id := uuid.New().String()
+	// rsaConfig := s.appConfig.RsaKeyConfig
+	// tokenConfig := s.appConfig.TokenConfig
+	// repo := s.appRepo.UserRepo
+	// tkrepo := s.appRepo.TokenRepo
 
-	accessToken, err := issueAccessToken(u, id, tokenConfig.AccessTokenDuration)
-	if err != nil {
-		return nil, err
-	}
+	// accessToken, err := issueAccessToken(u, id, tokenConfig.AccessTokenDuration)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	var refreshToken string
+	// var refreshToken string
 
-	if tokenConfig.UseRefreshToken {
-		refreshToken, err = issueRefreshToken(u, id, tokenConfig.RefreshTokenDuration)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// if tokenConfig.UseRefreshToken {
+	// 	refreshToken, err = issueRefreshToken(u, id, tokenConfig.RefreshTokenDuration)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
-	go tkrepo.Save(id, u.ID, accessToken, refreshToken)
+	// go tkrepo.Save(id, u.ID, accessToken, refreshToken)
 
-	return &Credential{
-		accessToken,
-		refreshToken,
-	}, nil
+	// return &Credential{
+	// 	accessToken,
+	// 	refreshToken,
+	// }, nil
+	return nil, nil
 }
 
 func (s *userService) RegisterUser(fullName string, username string, password string, email string) (user *model.User, err error) {
-	comConfig := s.AppConfig.CommonConfig
-	repo := s.AppRepo.UserRepo
+	comConfig := s.appConfig.CommonConfig
+	repo := s.appRepo.UserRepo
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), comConfig.BcryptCost)
 	if err != nil {

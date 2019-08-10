@@ -3,63 +3,50 @@ package mysqlrepo
 import (
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
+	"github.com/jmoiron/sqlx"
 	"github.com/vespaiach/auth/internal/conf"
+	"github.com/vespaiach/auth/internal/model"
 )
 
-type TestApp struct {
-	repos  *MysqlAppRepo
-	config *conf.AppConfig
-	db     *gorm.DB
+type appTesting struct {
+	actionRepo model.ActionRepo
+	config     *conf.AppConfig
+	actionIDs  []int64
+	db         *sqlx.DB
 }
 
-type schema struct {
-	up   string
-	down string
-}
-
-var testApp *TestApp
+var testApp *appTesting
 
 // TestMain is the main entry for all tests
 func TestMain(m *testing.M) {
 	config := conf.LoadAppConfig()
 
 	db, _ := initDb(config.DbConfig)
-	defer db.Close()
 
-	repos := NewMysqlAppRepo(db)
-
-	testApp = new(TestApp)
-	testApp.repos = repos
+	testApp = new(appTesting)
+	testApp.actionRepo = NewMysqlActionRepo(db)
 	testApp.config = config
 	testApp.db = db
 
+	err := testApp.createActionTable()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
 	code := m.Run()
+
+	cleanUp()
 	os.Exit(code)
 }
 
-func execSQL(query string) {
-	stmts := strings.Split(query, ";\n")
-	if len(strings.Trim(stmts[len(stmts)-1], " \n\t\r")) == 0 {
-		stmts = stmts[:len(stmts)-1]
-	}
-	for _, s := range stmts {
-		testApp.db.Exec(s)
-
-		if len(testApp.db.GetErrors()) > 0 {
-			fmt.Println("error in running schema creating")
-		}
-	}
-}
-
-func initDb(config *conf.DbConfig) (*gorm.DB, error) {
-	db, err := gorm.Open("mysql", config.BuildMysqlDSN())
-	db.LogMode(true)
-
+func initDb(config *conf.DbConfig) (*sqlx.DB, error) {
+	db, err := sqlx.Open("mysql", config.BuildMysqlDSN())
 	if err != nil {
 		return nil, err
 	}
@@ -67,17 +54,9 @@ func initDb(config *conf.DbConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-func (s schema) santize() (string, string) {
-	return strings.Replace(s.up, `"`, "`", -1), s.down
-}
+func cleanUp() {
+	fmt.Println("-----------clean-up-----------")
 
-func runWithSchema(s *schema, t *testing.T, testGroup func(t *testing.T)) {
-	up, down := s.santize()
-	defer func() {
-		execSQL(down)
-	}()
-
-	execSQL(up)
-
-	testGroup(t)
+	testApp.dropActionTable()
+	testApp.db.Close()
 }

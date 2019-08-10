@@ -1,10 +1,9 @@
 package conf
 
 import (
-	"fmt"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/vespaiach/auth/internal/comtype"
-	"github.com/vespaiach/gotils"
+	"github.com/vespaiach/auth/pkg/gotils"
 )
 
 var (
@@ -23,21 +22,21 @@ type TokenConfig struct {
 func loadTokenConfig() (config *TokenConfig, err error) {
 	AccessTokenDuration, err := gotils.GetEnvInt("ACCESS_TOKEN_DURATION")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		AccessTokenDuration = defaultAccessTokenDuration
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	RefreshTokenDuration, err := gotils.GetEnvInt("REFRESH_TOKEN_DURATION")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		RefreshTokenDuration = defaultRefreshTokenDuration
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	UseRefreshToken, err := gotils.GetEnvBool("USE_REFRESH_TOKEN")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		UseRefreshToken = defaultUseRefreshToken
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}

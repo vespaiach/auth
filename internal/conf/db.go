@@ -3,8 +3,10 @@ package conf
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/vespaiach/auth/internal/comtype"
-	"github.com/vespaiach/gotils"
+	"github.com/vespaiach/auth/pkg/gotils"
 )
 
 var (
@@ -36,43 +38,43 @@ func (config *DbConfig) BuildMysqlDSN() string {
 func loadDbConfig() (config *DbConfig, err error) {
 	DbHost, e := gotils.GetEnvString("DB_HOST")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		DbHost = defaultDbhost
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbPort, e := gotils.GetEnvString("DB_PORT")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		DbPort = defaultDbport
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbName, e := gotils.GetEnvString("DB_NAME")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		DbName = defaultDbname
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbUser, e := gotils.GetEnvString("DB_USER")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		DbUser = defaultDbuser
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbPass, e := gotils.GetEnvString("DB_PASS")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		DbPass = defaultDbpass
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 
 	DbOption, e := gotils.GetEnvString("DB_OPTION")
 	if e != nil {
-		fmt.Println(e)
-		DbPass = defaultDbpass
+		log.Println(e)
+		DbOption = defaultDboption
 		err = comtype.ErrAppConfigMissingOrWrongSet
 	}
 

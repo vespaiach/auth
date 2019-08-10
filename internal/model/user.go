@@ -8,23 +8,23 @@ import (
 
 // User model
 type User struct {
-	ID        uint      `gorm:"primary_key" json:"id"`
-	FullName  string    `gorm:"type:varchar(255)" json:"full_name"`
-	Username  string    `gorm:"type:varchar(63);unique_index" json:"username"`
-	Hashed    string    `gorm:"type:varchar(511)"`
-	Email     string    `gorm:"type:varchar(255);unique_index" json:"email"`
-	Active    int       `gorm:"type:int,index" json:"active"`
-	Verified  bool      `gorm:"type:bool,index" json:"verified"`
-	Actions   []*Action `gorm:"many2many:user_actions;"`
-	Roles     []*Role   `gorm:"many2many:user_roles;"`
+	ID        uint      `json:"id"`
+	FullName  string    `json:"full_name"`
+	Username  string    `json:"username"`
+	Hashed    string    `json:"-"`
+	Email     string    `json:"email"`
+	Active    int       `json:"active"`
+	Verified  bool      `json:"verified"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Actions   []*Action `json:"actions"`
+	Roles     []*Role   `json:"roles"`
 }
 
 // UserRepo defines user repo
 type UserRepo interface {
 	// GetByID gets user by user ID
-	GetByID(id uint) (user *User, err error)
+	GetByID(id int64) (user *User, err error)
 
 	// GetByEmail gets user by user's email
 	GetByUsername(username string) (*User, error)
@@ -36,7 +36,7 @@ type UserRepo interface {
 	Create(fullName string, username string, hashed string, email string) (*User, error)
 
 	// Update user
-	Update(id uint, fields map[string]interface{}) error
+	Update(id int64, fields map[string]interface{}) error
 
 	// Query a list of users
 	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*User, int64, error)
