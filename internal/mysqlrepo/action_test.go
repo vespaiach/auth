@@ -11,7 +11,7 @@ import (
 func TestQueryAction(t *testing.T) {
 	t.Parallel()
 
-	ids, err := testApp.loadActionFixtures("action")
+	ids, err := testApp.loadActionFixtures("action_fix")
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -20,14 +20,14 @@ func TestQueryAction(t *testing.T) {
 	t.Run("query_action_by_name_success", func(t *testing.T) {
 		t.Parallel()
 
-		filter := map[string]interface{}{"action_name": "uniq_1"}
+		filter := map[string]interface{}{"action_name": "action_fix"}
 		sort := map[string]comtype.SortDirection{"action_name": comtype.Ascending}
 		actions, total, err := testApp.actionRepo.Query(1, 10, filter, sort)
 
 		require.Nil(t, err)
 		require.NotNil(t, actions)
 		require.Len(t, actions, 10)
-		require.Equal(t, int64(11), total)
+		require.Equal(t, int64(20), total)
 	})
 
 	t.Run("query_action_by_active_success", func(t *testing.T) {

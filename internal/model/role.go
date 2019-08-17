@@ -8,13 +8,13 @@ import (
 
 // Role model
 type Role struct {
-	ID        int64    `json:"id"`
-	RoleName  string    `json:"role_name"`
-	RoleDesc  string    `json:"role_desc"`
-	Active    bool      `json:"active"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Actions   []*Action `json:"actions"`
+	ID        int64     `json:"id" db:"id"`
+	RoleName  string    `json:"role_name" db:"role_name"`
+	RoleDesc  string    `json:"role_desc" db:"role_desc"`
+	Active    bool      `json:"active" db:"active"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	Actions   []*Action `json:"actions" db:"actions"`
 }
 
 // RoleRepo defines role repo

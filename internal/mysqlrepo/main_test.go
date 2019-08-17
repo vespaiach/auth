@@ -15,6 +15,7 @@ import (
 
 type appTesting struct {
 	actionRepo model.ActionRepo
+	roleRepo   model.RoleRepo
 	config     *conf.AppConfig
 	actionIDs  []int64
 	db         *sqlx.DB
@@ -30,10 +31,16 @@ func TestMain(m *testing.M) {
 
 	testApp = new(appTesting)
 	testApp.actionRepo = NewMysqlActionRepo(db)
+	testApp.roleRepo = NewMysqlRoleRepo(db)
 	testApp.config = config
 	testApp.db = db
 
 	err := testApp.createActionTable()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	err = testApp.createRoleTable()
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -58,5 +65,6 @@ func cleanUp() {
 	fmt.Println("-----------clean-up-----------")
 
 	testApp.dropActionTable()
+	testApp.dropRoleTable()
 	testApp.db.Close()
 }

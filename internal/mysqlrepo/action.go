@@ -11,9 +11,6 @@ import (
 	"github.com/vespaiach/auth/internal/model"
 )
 
-var actionFilterKeys = map[string]bool{"action_name": true, "active": true}
-var actionSortKeys = map[string]bool{"action_name": true, "active": true, "created_at": true}
-
 // MysqlActionRepo will implement model.ActionRepo
 type MysqlActionRepo struct {
 	DbClient *sqlx.DB
@@ -43,7 +40,7 @@ LIMIT 1;
 func (r *MysqlActionRepo) GetByID(id int64) (*model.Action, error) {
 	rows, err := r.DbClient.Queryx(sqlGetActionByID, id)
 	if err != nil {
-		log.Error("GetByID:", err)
+		log.Error("MysqlActionRepo - GetByID:", err)
 		return nil, comtype.ErrQueryDataFailed
 	}
 	defer rows.Close()
@@ -55,7 +52,7 @@ func (r *MysqlActionRepo) GetByID(id int64) (*model.Action, error) {
 	action := new(model.Action)
 	err = rows.StructScan(action)
 	if err != nil {
-		log.Error("GetByID:", err)
+		log.Error("MysqlActionRepo - GetByID:", err)
 		return nil, comtype.ErrQueryDataFailed
 	}
 
@@ -73,7 +70,7 @@ LIMIT 1;
 func (r *MysqlActionRepo) GetByName(name string) (*model.Action, error) {
 	rows, err := r.DbClient.Queryx(sqlGetActionByName, name)
 	if err != nil {
-		log.Error("GetByName:", err)
+		log.Error("MysqlActionRepo - GetByName:", err)
 		return nil, comtype.ErrQueryDataFailed
 	}
 	defer rows.Close()
@@ -85,7 +82,7 @@ func (r *MysqlActionRepo) GetByName(name string) (*model.Action, error) {
 	action := new(model.Action)
 	err = rows.StructScan(action)
 	if err != nil {
-		log.Error("GetByName:", err)
+		log.Error("MysqlActionRepo - GetByName:", err)
 		return nil, comtype.ErrQueryDataFailed
 	}
 
@@ -100,19 +97,19 @@ INSERT INTO actions(action_name, action_desc) VALUES(?, ?);
 func (r *MysqlActionRepo) Create(name string, desc string) (int64, error) {
 	stmt, err := r.DbClient.Prepare(sqlCreateAction)
 	if err != nil {
-		log.Error(err)
+		log.Error("MysqlActionRepo - Create:", err)
 		return 0, comtype.ErrCreateDataFailed
 	}
 
 	res, err := stmt.Exec(name, desc)
 	if err != nil {
-		log.Error(err)
+		log.Error("MysqlActionRepo - Create:", err)
 		return 0, comtype.ErrCreateDataFailed
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
-		log.Error(err)
+		log.Error("MysqlActionRepo - Create:", err)
 		return 0, comtype.ErrCreateDataFailed
 	}
 
@@ -129,27 +126,27 @@ WHERE actions.id = :id;
 func (r *MysqlActionRepo) Update(id int64, fields map[string]interface{}) error {
 	conditions := sqlWhereBuilder(", ", fields)
 	if len(conditions) == 0 {
-		log.Error(errors.New("empty updating fields"))
+		log.Error("MysqlActionRepo - Update:", errors.New("empty updating fields"))
 		return comtype.ErrUpdateDataFailed
 	}
 
 	_, err := r.DbClient.NamedExec(fmt.Sprintf(sqlUpdateAction, conditions), fields)
 	if err != nil {
-		log.Error(err)
+		log.Error("MysqlActionRepo - Update:", err)
 		return comtype.ErrUpdateDataFailed
 	}
 
 	return nil
 }
 
-const sqlListUsers = `
+const sqlListAction = `
 SELECT *
 FROM actions
 %s
 ORDER BY %s 
 LIMIT :offset, :limit;`
 
-const sqlCountListUsers = `
+const sqlCountListAction = `
 SELECT Count(*)
 FROM actions
 %s ;`
@@ -165,9 +162,9 @@ func (r *MysqlActionRepo) Query(page int, perPage int, filters map[string]interf
 	ch := make(chan int64)
 	go func() {
 		var totals int64
-		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListUsers, conditions), filters)
+		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListAction, conditions), filters)
 		if err != nil {
-			log.Error(err)
+			log.Error("MysqlActionRepo - Query:", err)
 			ch <- int64(-1)
 			return
 		}
@@ -183,9 +180,9 @@ func (r *MysqlActionRepo) Query(page int, perPage int, filters map[string]interf
 		close(ch)
 	}()
 
-	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListUsers, conditions, sortings), filters)
+	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListAction, conditions, sortings), filters)
 	if err != nil {
-		log.Error(err)
+		log.Error("MysqlActionRepo - Query:", err)
 		return nil, 0, comtype.ErrQueryDataFailed
 	}
 	defer rows.Close()
@@ -195,7 +192,7 @@ func (r *MysqlActionRepo) Query(page int, perPage int, filters map[string]interf
 		var ac model.Action
 		rows.StructScan(&ac)
 		if err != nil {
-			log.Error(err)
+			log.Error("MysqlActionRepo - Query:", err)
 			return nil, 0, comtype.ErrQueryDataFailed
 		}
 		results = append(results, &ac)
