@@ -4,4 +4,5 @@ package model
 type AppRepo struct {
 	ActionRepo ActionRepo
 	RoleRepo   RoleRepo
+	UserRepo   UserRepo
 }

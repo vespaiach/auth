@@ -1,125 +1,101 @@
 package mysqlrepo
 
-// import (
-// 	"strconv"
-// 	"testing"
+import (
+	"log"
+	"testing"
 
-// 	"github.com/stretchr/testify/require"
-// 	"github.com/vespaiach/auth/internal/comtype"
-// 	"github.com/vespaiach/auth/internal/model"
-// )
+	"github.com/stretchr/testify/require"
+	"github.com/vespaiach/auth/internal/comtype"
+)
 
-// func loadUserfixtures() {
-// 	tx := testApp.db.Begin()
+func TestQueryUser(t *testing.T) {
+	t.Parallel()
 
-// 	i := 0
-// 	for i < 20 {
-// 		a := strconv.Itoa(i)
-// 		testApp.db.Exec("INSERT INTO `authentication`.`users`(full_name, username, hashed, email) VALUES (?, ?, ?, ?)", "Toan "+a, "toan_"+a, "hashed_"+a, "email_"+a)
-// 		i++
-// 	}
+	ids, err := testApp.loadUserFixtures("user_fixs")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
-// 	tx.Commit()
-// }
+	t.Run("query_user_by_name_success", func(t *testing.T) {
+		t.Parallel()
 
-// func TestUserRepo(tInst *testing.T) {
+		filter := map[string]interface{}{"username": "user_fixs"}
+		sort := map[string]comtype.SortDirection{"full_name": comtype.Ascending}
+		users, total, err := testApp.userRepo.Query(1, 10, filter, sort)
 
-// 	s := &schema{
-// 		up: `
-// 			CREATE TABLE IF NOT EXISTS "authentication"."users" (
-// 				"id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-// 				"full_name" VARCHAR(63) NOT NULL,
-// 				"username" VARCHAR(63) NOT NULL,
-// 				"hashed" VARCHAR(255) NOT NULL,
-// 				"email" VARCHAR(127) NOT NULL,
-// 				"active" TINYINT(1) NOT NULL DEFAULT 1,
-// 				"verified" TINYINT(1) NOT NULL DEFAULT 0,
-// 				"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-// 				"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-// 			PRIMARY KEY ("id"),
-// 			UNIQUE INDEX "user_name_uniq" ("username" ASC),
-// 			INDEX "active_idx" ("active" ASC))
-// 			ENGINE = InnoDB
-// 			AUTO_INCREMENT = 1
-// 			DEFAULT CHARACTER SET = utf8;
-// 		`,
-// 		down: `
-// 			DROP TABLE users;
-// 		`,
-// 	}
+		require.Nil(t, err)
+		require.NotNil(t, users)
+		require.Len(t, users, 10)
+		require.Equal(t, int64(20), total)
+	})
 
-// 	runWithSchema(s, tInst, func(t *testing.T) {
+	t.Run("query_user_by_active_success", func(t *testing.T) {
+		t.Parallel()
 
-// 		loadUserfixtures()
+		filter := map[string]interface{}{"active": false}
+		sort := map[string]comtype.SortDirection{}
+		users, total, err := testApp.userRepo.Query(1, 10, filter, sort)
 
-// 		var user1 *model.User
+		require.Nil(t, err)
+		require.NotNil(t, users)
+		require.Len(t, users, 0)
+		require.Zero(t, total)
+	})
 
-// 		t.Run("query_user_by_full_name_success", func(t *testing.T) {
-// 			filter := map[string]interface{}{"full_name": "Toan 1"}
-// 			users, total, err := testApp.repos.UserRepo.Query(1, 10, filter, map[string]comtype.SortDirection{})
+	t.Run("get_user_by_id_success", func(t *testing.T) {
+		t.Parallel()
 
-// 			require.Nil(t, err)
-// 			require.NotNil(t, users)
-// 			require.Len(t, users, 10)
-// 			require.Equal(t, total, int64(11))
-// 		})
+		user, err := testApp.userRepo.GetByID(ids[0])
 
-// 		t.Run("query_user_by_email_success", func(t *testing.T) {
-// 			filter := map[string]interface{}{"email": "Ema"}
-// 			users, total, err := testApp.repos.UserRepo.Query(1, 5, filter, map[string]comtype.SortDirection{})
+		require.Nil(t, err)
+		require.NotNil(t, user)
+		require.Equal(t, user.ID, ids[0])
+	})
 
-// 			require.Nil(t, err)
-// 			require.NotNil(t, users)
-// 			require.Len(t, users, 5)
-// 			require.Equal(t, total, int64(20))
-// 		})
+	t.Run("get_user_by_username_success", func(t *testing.T) {
+		t.Parallel()
 
-// 		t.Run("create_user_success", func(t *testing.T) {
-// 			user, err := testApp.repos.UserRepo.Create("Toan Nguyen", "username1", "123", "nta.toan@gmil.com")
+		name := testApp.generateUniqueString("test_user")
+		id, err := testApp.createUserWithName(name)
+		require.Nil(t, err)
+		require.NotZero(t, id)
 
-// 			require.Nil(t, err)
-// 			require.NotNil(t, user)
-// 			require.NotZero(t, user.ID)
-// 		})
+		user, err := testApp.userRepo.GetByUsername(name)
+		require.Nil(t, err)
+		require.NotNil(t, user)
+		require.Equal(t, id, user.ID)
+		require.True(t, user.Active)
+	})
+}
 
-// 		t.Run("get_user_by_username_success", func(t *testing.T) {
-// 			var er error
-// 			user1, er = testApp.repos.UserRepo.GetByUsername("toan_1")
+// func TestCreateUser(t *testing.T) {
+// 	t.Parallel()
 
-// 			require.Nil(t, er)
-// 			require.NotNil(t, user1)
-// 			require.Equal(t, user1.FullName, "Toan 1")
-// 			require.Equal(t, user1.Hashed, "hashed_1")
-// 			require.Equal(t, user1.Email, "email_1")
-// 		})
+// 	t.Run("create_user_success", func(t *testing.T) {
+// 		t.Parallel()
 
-// 		t.Run("get_user_by_id_success", func(t *testing.T) {
-// 			user, err := testApp.repos.UserRepo.GetByID(user1.ID)
+// 		userName := testApp.generateUniqueString("created_user")
 
-// 			require.Nil(t, err)
-// 			require.NotNil(t, user)
-// 			require.Equal(t, user.ID, user1.ID)
-// 		})
+// 		id, err := testApp.userRepo.Create(userName, "created_user_desc")
+// 		require.Nil(t, err)
+// 		require.NotZero(t, id)
 
-// 		t.Run("get_user_by_email_success", func(t *testing.T) {
-// 			user, err := testApp.repos.UserRepo.GetByEmail(user1.Email)
+// 		found, err := testApp.userRepo.GetByID(id)
+// 		require.Nil(t, err)
+// 		require.NotNil(t, found)
+// 		require.Equal(t, id, found.ID)
+// 		require.True(t, found.Active)
+// 		require.Equal(t, userName, found.UserName)
+// 		require.Equal(t, "created_user_desc", found.UserDesc)
+// 	})
 
-// 			require.Nil(t, err)
-// 			require.NotNil(t, user)
-// 			require.Equal(t, user.ID, user1.ID)
-// 		})
+// 	t.Run("create_user_fail", func(t *testing.T) {
+// 		t.Parallel()
 
-// 		t.Run("update_user_success", func(t *testing.T) {
-// 			updating := map[string]interface{}{
-// 				"full_name": "changed",
-// 				"email":     "changed",
-// 				"hashed":    "changed",
-// 				"active":    false,
-// 				"verified":  true,
-// 			}
-// 			err := testApp.repos.UserRepo.Update(user1.ID, updating)
-
-// 			require.Nil(t, err)
-// 		})
+// 		userName := testApp.generateUniqueString("created_user")
+// 		id, err := testApp.userRepo.Create(userName, "created_user_desc")
+// 		require.Nil(t, err)
+// 		require.NotZero(t, id)
 // 	})
 // }

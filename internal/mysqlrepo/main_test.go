@@ -16,6 +16,7 @@ import (
 type appTesting struct {
 	actionRepo model.ActionRepo
 	roleRepo   model.RoleRepo
+	userRepo   model.UserRepo
 	config     *conf.AppConfig
 	actionIDs  []int64
 	db         *sqlx.DB
@@ -32,6 +33,7 @@ func TestMain(m *testing.M) {
 	testApp = new(appTesting)
 	testApp.actionRepo = NewMysqlActionRepo(db)
 	testApp.roleRepo = NewMysqlRoleRepo(db)
+	testApp.userRepo = NewMysqlUserRepo(db)
 	testApp.config = config
 	testApp.db = db
 
@@ -41,6 +43,11 @@ func TestMain(m *testing.M) {
 		return
 	}
 	err = testApp.createRoleTable()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	err = testApp.createUserTable()
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -66,5 +73,6 @@ func cleanUp() {
 
 	testApp.dropActionTable()
 	testApp.dropRoleTable()
+	testApp.dropUserTable()
 	testApp.db.Close()
 }

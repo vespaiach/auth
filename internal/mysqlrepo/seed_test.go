@@ -67,12 +67,38 @@ func (t *appTesting) createRoleTable() error {
 	`)
 }
 
+func (t *appTesting) createUserTable() error {
+	return t.runchema(`
+		CREATE TABLE IF NOT EXISTS "users" (
+			"id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			"full_name" VARCHAR(254) NOT NULL DEFAULT '',
+			"username" VARCHAR(63) NOT NULL DEFAULT '',
+			"hashed" VARCHAR(255) NOT NULL DEFAULT '',
+			"email" VARCHAR(127) NOT NULL DEFAULT '',
+			"verified" TINYINT(1) NOT NULL DEFAULT 0,
+			"active" TINYINT(1) NOT NULL DEFAULT 1,
+			"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY ("id"),
+			UNIQUE INDEX "user_name_uniq" ("username" ASC),
+			UNIQUE INDEX "user_email_uniq" ("email" ASC),
+			INDEX "user_active_idx" ("active" ASC))
+		ENGINE = InnoDB
+		AUTO_INCREMENT = 1
+		DEFAULT CHARACTER SET = utf8;
+	`)
+}
+
 func (t *appTesting) dropActionTable() error {
 	return t.runchema(`DROP TABLE actions;`)
 }
 
 func (t *appTesting) dropRoleTable() error {
 	return t.runchema(`DROP TABLE roles;`)
+}
+
+func (t *appTesting) dropUserTable() error {
+	return t.runchema(`DROP TABLE users;`)
 }
 
 func (t *appTesting) generateUniqueString(prefix string) string {
@@ -143,6 +169,35 @@ func (t *appTesting) loadActionFixtures(actionPrefix string) ([]int64, error) {
 	return ids, nil
 }
 
+func (t *appTesting) loadUserFixtures(usernamePrefix string) ([]int64, error) {
+	ids := make([]int64, 0, defaultFixtureRow)
+
+	tx, _ := t.db.Begin()
+	stmt, err := tx.Prepare(sqlCreateUser)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < defaultFixtureRow; i++ {
+		name := t.generateUniqueString(usernamePrefix)
+		res, err := stmt.Exec(name, name, name, name)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+
+		lastID, err := res.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, lastID)
+	}
+	tx.Commit()
+
+	return ids, nil
+}
+
 func (t *appTesting) createActionWithName(name string) (int64, error) {
 	stmt, err := t.db.Prepare(sqlCreateAction)
 	if err != nil {
@@ -169,6 +224,24 @@ func (t *appTesting) createRoleWithName(name string) (int64, error) {
 	}
 
 	res, err := stmt.Exec(name, name)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+func (t *appTesting) createUserWithName(name string) (int64, error) {
+	stmt, err := t.db.Prepare(sqlCreateUser)
+	if err != nil {
+		return 0, err
+	}
+
+	res, err := stmt.Exec(name, name, name, name)
 	if err != nil {
 		return 0, err
 	}

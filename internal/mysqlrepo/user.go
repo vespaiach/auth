@@ -1,148 +1,231 @@
 package mysqlrepo
 
-// import (
-// 	"time"
+import (
+	"errors"
+	"fmt"
 
-// 	"github.com/jmoiron/sqlx"
-// 	"github.com/vespaiach/auth/internal/comtype"
-// 	"github.com/vespaiach/auth/internal/model"
-// )
+	"github.com/jmoiron/sqlx"
 
-// var userFilterKeys = map[string]bool{"full_name": true, "username": true, "email": true}
-// var userSortKeys = map[string]bool{"full_name": true, "username": true, "email": true, "created_at": true, "updated_at": true}
+	log "github.com/sirupsen/logrus"
+	"github.com/vespaiach/auth/internal/comtype"
+	"github.com/vespaiach/auth/internal/model"
+)
 
-// // MysqlUserRepo will implement model.UserRepo
-// type MysqlUserRepo struct {
-// 	DbClient *sqlx.DB
-// }
+// MysqlUserRepo will implement model.UserRepo
+type MysqlUserRepo struct {
+	DbClient *sqlx.DB
+}
 
-// // NewMysqlUserRepo create new instance of MysqlUserRepo
-// func NewMysqlUserRepo(db *sqlx.DB) model.UserRepo {
-// 	return &MysqlUserRepo{
-// 		db,
-// 	}
-// }
+// NewMysqlUserRepo create new instance of MysqlUserRepo
+func NewMysqlUserRepo(db *sqlx.DB) model.UserRepo {
+	return &MysqlUserRepo{
+		db,
+	}
+}
 
-// var sqlGetUserByID = `
-// SELECT *
-// FROM users
-// WHERE users.id = ?
-// LIMIT 1;
-// `
+var sqlGetUserByID = `
+SELECT *
+FROM users
+WHERE users.id =?
+LIMIT 1;
+`
 
-// // GetByID find a user by its ID
-// func (r *MysqlUserRepo) GetByID(id int64) (user *model.User, err error) {
-// 	row := r.DbClient.QueryRow(sqlGetUserByID, id)
-// 	var telcode int
-// 	err = row.Scan(&telcode)
+// GetByID find an user by its ID
+func (r *MysqlUserRepo) GetByID(id int64) (*model.User, error) {
+	rows, err := r.DbClient.Queryx(sqlGetUserByID, id)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByID:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
+	defer rows.Close()
 
-// 	return
-// }
+	if !rows.Next() {
+		return nil, comtype.ErrDataNotFound
+	}
 
-// // GetByUsername find a user by its username
-// func (repo *MysqlUserRepo) GetByUsername(username string) (user *model.User, err error) {
-// 	user = new(model.User)
-// 	repo.DbClient.Where("username=?", username).First(&user)
+	user := new(model.User)
+	err = rows.StructScan(user)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByID:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
 
-// 	if user == nil {
-// 		err = comtype.ErrDataNotFound
-// 	}
+	return user, nil
+}
 
-// 	return
-// }
+var sqlGetUserByName = `
+SELECT *
+FROM users
+WHERE users.username = ?
+LIMIT 1;
+`
 
-// // GetByEmail find a user by its email
-// func (repo *MysqlUserRepo) GetByEmail(email string) (user *model.User, err error) {
-// 	user = new(model.User)
-// 	repo.DbClient.Where("email=?", email).First(&user)
+// GetByUsername find an user by its name
+func (r *MysqlUserRepo) GetByUsername(name string) (*model.User, error) {
+	rows, err := r.DbClient.Queryx(sqlGetUserByName, name)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByUsername:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
+	defer rows.Close()
 
-// 	if user == nil {
-// 		err = comtype.ErrDataNotFound
-// 	}
+	if !rows.Next() {
+		return nil, comtype.ErrDataNotFound
+	}
 
-// 	return
-// }
+	user := new(model.User)
+	err = rows.StructScan(user)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByUsername:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
 
-// // Create a new user
-// func (repo *MysqlUserRepo) Create(fullName string, username string, hashed string, email string) (*model.User, error) {
-// 	user := model.User{
-// 		FullName: fullName,
-// 		Username: username,
-// 		Hashed:   hashed,
-// 		Email:    email,
-// 	}
+	return user, nil
+}
 
-// 	repo.DbClient.Create(&user)
+var sqlGetUserByEmail = `
+SELECT *
+FROM users
+WHERE users.email = ?
+LIMIT 1;
+`
 
-// 	if repo.DbClient.NewRecord(user) {
-// 		return nil, comtype.ErrCreadDataFailed
-// 	}
+// GetByEmail find an user by its email
+func (r *MysqlUserRepo) GetByEmail(email string) (*model.User, error) {
+	rows, err := r.DbClient.Queryx(sqlGetUserByEmail, email)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByEmail:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
+	defer rows.Close()
 
-// 	return &user, nil
-// }
+	if !rows.Next() {
+		return nil, comtype.ErrDataNotFound
+	}
 
-// // Update user
-// func (repo *MysqlUserRepo) Update(id uint, fields map[string]interface{}) (err error) {
-// 	user, err := repo.GetByID(id)
-// 	if err != nil {
-// 		return err
-// 	}
+	user := new(model.User)
+	err = rows.StructScan(user)
+	if err != nil {
+		log.Error("MysqlUserRepo - GetByEmail:", err)
+		return nil, comtype.ErrQueryDataFailed
+	}
 
-// 	fields["updated_at"] = time.Now()
+	return user, nil
+}
 
-// 	repo.DbClient.Model(&user).Updates(fields)
+var sqlCreateUser = `
+INSERT INTO users(full_name, username, hashed, email) VALUES(?, ?, ?, ?);
+`
 
-// 	return nil
-// }
+// Create an new user
+func (r *MysqlUserRepo) Create(fullName string, username string, hashed string, email string) (int64, error) {
+	stmt, err := r.DbClient.Prepare(sqlCreateUser)
+	if err != nil {
+		log.Error("MysqlUserRepo - Create:", err)
+		return 0, comtype.ErrCreateDataFailed
+	}
 
-// // Query a list of users
-// func (repo *MysqlUserRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.User, int64, error) {
-// 	db := repo.DbClient.Model(&model.User{})
+	res, err := stmt.Exec(fullName, username, hashed, email)
+	if err != nil {
+		log.Error("MysqlUserRepo - Create:", err)
+		return 0, comtype.ErrCreateDataFailed
+	}
 
-// 	var total int64
-// 	users := []*model.User{}
-// 	offset := perPage * (page - 1)
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		log.Error("MysqlUserRepo - Create:", err)
+		return 0, comtype.ErrCreateDataFailed
+	}
 
-// 	for k, v := range filters {
-// 		_, ok := userFilterKeys[k]
-// 		if ok {
-// 			if k == "active" {
-// 				if v == comtype.Active {
-// 					db = db.Where("active = ?", 1)
-// 				} else {
-// 					db = db.Where("active = ?", 0)
-// 				}
-// 			} else {
-// 				s, good := v.(string)
-// 				if good {
-// 					db = db.Where(k+" LIKE ?", s+"%")
-// 				} else {
-// 					return nil, 0, comtype.ErrDataTypeMismatch
-// 				}
-// 			}
-// 		} else {
-// 			return nil, 0, comtype.ErrNotAllowField
-// 		}
-// 	}
+	return lastID, nil
+}
 
-// 	for k, v := range sorts {
-// 		_, ok := userSortKeys[k]
-// 		if ok {
-// 			if v == comtype.Ascending {
-// 				db = db.Order(k + " asc")
-// 			} else {
-// 				db = db.Order(k + " desc")
-// 			}
-// 		} else {
-// 			return nil, 0, comtype.ErrNotAllowField
-// 		}
-// 	}
+var sqlUpdateUser = `
+UPDATE users
+%s
+WHERE users.id = :id;
+`
 
-// 	db.
-// 		Offset(offset).
-// 		Limit(perPage).
-// 		Count(&total).
-// 		Find(&users)
+// Update user
+func (r *MysqlUserRepo) Update(id int64, fields map[string]interface{}) error {
+	conditions := sqlWhereBuilder(", ", fields)
+	if len(conditions) == 0 {
+		log.Error("MysqlUserRepo - Update:", errors.New("empty updating fields"))
+		return comtype.ErrUpdateDataFailed
+	}
 
-// 	return users, total, nil
-// }
+	_, err := r.DbClient.NamedExec(fmt.Sprintf(sqlUpdateUser, conditions), fields)
+	if err != nil {
+		log.Error("MysqlUserRepo - Update:", err)
+		return comtype.ErrUpdateDataFailed
+	}
+
+	return nil
+}
+
+const sqlListUser = `
+SELECT *
+FROM users
+%s
+ORDER BY %s 
+LIMIT :offset, :limit;`
+
+const sqlCountListUser = `
+SELECT Count(*)
+FROM users
+%s ;`
+
+// Query a list of users
+func (r *MysqlUserRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.User, int64, error) {
+	conditions := sqlWhereBuilder(" AND ", filters)
+	sortings := sqlSortingBuilder(sorts)
+	filters = sqlLikeConditionFilter(filters)
+	filters["offset"] = (page - 1) * perPage
+	filters["limit"] = perPage
+
+	ch := make(chan int64)
+	go func() {
+		var totals int64
+		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListUser, conditions), filters)
+		if err != nil {
+			log.Error("MysqlUserRepo - Query:", err)
+			ch <- int64(-1)
+			return
+		}
+		defer rows.Close()
+
+		if !rows.Next() {
+			ch <- int64(-1)
+			return
+		}
+
+		rows.Scan(&totals)
+		ch <- totals
+		close(ch)
+	}()
+
+	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListUser, conditions, sortings), filters)
+	if err != nil {
+		log.Error("MysqlUserRepo - Query:", err)
+		return nil, 0, comtype.ErrQueryDataFailed
+	}
+	defer rows.Close()
+
+	results := make([]*model.User, 0, perPage)
+	for rows.Next() {
+		var ac model.User
+		rows.StructScan(&ac)
+		if err != nil {
+			log.Error("MysqlUserRepo - Query:", err)
+			return nil, 0, comtype.ErrQueryDataFailed
+		}
+		results = append(results, &ac)
+	}
+
+	total := <-ch
+	if total == -1 {
+		return nil, 0, comtype.ErrQueryDataFailed
+	}
+
+	return results, total, nil
+}
