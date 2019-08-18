@@ -1,7 +1,6 @@
 package mysqlrepo
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,23 +10,17 @@ import (
 func TestQueryAction(t *testing.T) {
 	t.Parallel()
 
-	ids, err := testApp.loadActionFixtures("action_fix")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
 	t.Run("query_action_by_name_success", func(t *testing.T) {
 		t.Parallel()
 
-		filter := map[string]interface{}{"action_name": "action_fix"}
+		filter := map[string]interface{}{"action_name": "_action"}
 		sort := map[string]comtype.SortDirection{"action_name": comtype.Ascending}
-		actions, total, err := testApp.actionRepo.Query(1, 10, filter, sort)
+		actions, total, err := testApp.actionRepo.Query(1, 4, filter, sort)
 
 		require.Nil(t, err)
 		require.NotNil(t, actions)
-		require.Len(t, actions, 10)
-		require.Equal(t, int64(20), total)
+		require.Len(t, actions, 4)
+		require.Equal(t, int64(5), total)
 	})
 
 	t.Run("query_action_by_active_success", func(t *testing.T) {
@@ -46,25 +39,22 @@ func TestQueryAction(t *testing.T) {
 	t.Run("get_action_by_id_success", func(t *testing.T) {
 		t.Parallel()
 
-		action, err := testApp.actionRepo.GetByID(ids[0])
+		action, err := testApp.actionRepo.GetByID(1)
 
 		require.Nil(t, err)
 		require.NotNil(t, action)
-		require.Equal(t, action.ID, ids[0])
+		require.Equal(t, action.ID, int64(1))
+		require.Equal(t, action.ActionName, "create_action")
+		require.Equal(t, action.ActionDesc, "Create a action")
 	})
 
 	t.Run("get_action_by_name_success", func(t *testing.T) {
 		t.Parallel()
 
-		name := testApp.generateUniqueString("test_action")
-		id, err := testApp.createActionWithName(name)
-		require.Nil(t, err)
-		require.NotZero(t, id)
-
-		action, err := testApp.actionRepo.GetByName(name)
+		action, err := testApp.actionRepo.GetByName("list_user")
 		require.Nil(t, err)
 		require.NotNil(t, action)
-		require.Equal(t, id, action.ID)
+		require.Equal(t, int64(10), action.ID)
 		require.True(t, action.Active)
 	})
 }
@@ -93,9 +83,8 @@ func TestCreateAction(t *testing.T) {
 	t.Run("create_action_fail", func(t *testing.T) {
 		t.Parallel()
 
-		actionName := testApp.generateUniqueString("created_action")
-		id, err := testApp.actionRepo.Create(actionName, "created_action_desc")
-		require.Nil(t, err)
-		require.NotZero(t, id)
+		id, err := testApp.actionRepo.Create("create_action", "create_action")
+		require.NotNil(t, err)
+		require.Zero(t, id)
 	})
 }

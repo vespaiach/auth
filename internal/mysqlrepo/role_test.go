@@ -1,7 +1,6 @@
 package mysqlrepo
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,23 +10,17 @@ import (
 func TestQueryRole(t *testing.T) {
 	t.Parallel()
 
-	ids, err := testApp.loadRoleFixtures("role_fixs")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
 	t.Run("query_role_by_name_success", func(t *testing.T) {
 		t.Parallel()
 
-		filter := map[string]interface{}{"role_name": "role_fixs"}
+		filter := map[string]interface{}{"role_name": "_role"}
 		sort := map[string]comtype.SortDirection{"role_name": comtype.Ascending}
-		roles, total, err := testApp.roleRepo.Query(1, 10, filter, sort)
+		roles, total, err := testApp.roleRepo.Query(1, 2, filter, sort)
 
 		require.Nil(t, err)
 		require.NotNil(t, roles)
-		require.Len(t, roles, 10)
-		require.Equal(t, int64(20), total)
+		require.Greater(t, len(roles), 0)
+		require.NotZero(t, total)
 	})
 
 	t.Run("query_role_by_active_success", func(t *testing.T) {
@@ -46,25 +39,23 @@ func TestQueryRole(t *testing.T) {
 	t.Run("get_role_by_id_success", func(t *testing.T) {
 		t.Parallel()
 
-		role, err := testApp.roleRepo.GetByID(ids[0])
+		role, err := testApp.roleRepo.GetByID(1)
 
 		require.Nil(t, err)
 		require.NotNil(t, role)
-		require.Equal(t, role.ID, ids[0])
+		require.Equal(t, role.ID, int64(1))
+		require.Equal(t, role.RoleName, "admin_role")
+		require.Equal(t, role.RoleDesc, "Admin role")
 	})
 
 	t.Run("get_role_by_name_success", func(t *testing.T) {
 		t.Parallel()
 
-		name := testApp.generateUniqueString("test_role")
-		id, err := testApp.createRoleWithName(name)
-		require.Nil(t, err)
-		require.NotZero(t, id)
-
-		role, err := testApp.roleRepo.GetByName(name)
+		role, err := testApp.roleRepo.GetByName("staff_role")
 		require.Nil(t, err)
 		require.NotNil(t, role)
-		require.Equal(t, id, role.ID)
+		require.Equal(t, int64(2), role.ID)
+		require.Equal(t, "staff_role", role.RoleName)
 		require.True(t, role.Active)
 	})
 }
@@ -93,9 +84,8 @@ func TestCreateRole(t *testing.T) {
 	t.Run("create_role_fail", func(t *testing.T) {
 		t.Parallel()
 
-		roleName := testApp.generateUniqueString("created_role")
-		id, err := testApp.roleRepo.Create(roleName, "created_role_desc")
-		require.Nil(t, err)
-		require.NotZero(t, id)
+		id, err := testApp.roleRepo.Create("admin_role", "created_role_desc")
+		require.NotNil(t, err)
+		require.Zero(t, id)
 	})
 }

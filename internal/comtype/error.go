@@ -6,6 +6,7 @@ import "errors"
 var (
 	ErrDataNotFound     = errors.New("not found data")
 	ErrCreateDataFailed = errors.New("created data failed")
+	ErrDeleteDataFailed = errors.New("deleted data failed")
 	ErrUpdateDataFailed = errors.New("updated data failed")
 	ErrQueryDataFailed  = errors.New("queried data failed")
 )
