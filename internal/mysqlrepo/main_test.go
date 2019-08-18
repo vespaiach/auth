@@ -1,25 +1,26 @@
 package mysqlrepo
 
 import (
-	"fmt"
 	"os"
 	"testing"
-
-	log "github.com/sirupsen/logrus"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/vespaiach/auth/internal/conf"
+	"github.com/vespaiach/auth/internal/migrate"
 	"github.com/vespaiach/auth/internal/model"
 )
 
 type appTesting struct {
-	actionRepo model.ActionRepo
-	roleRepo   model.RoleRepo
-	userRepo   model.UserRepo
-	config     *conf.AppConfig
-	actionIDs  []int64
-	db         *sqlx.DB
+	actionRepo     model.ActionRepo
+	roleRepo       model.RoleRepo
+	userRepo       model.UserRepo
+	userActionRepo model.UserActionRepo
+	userRoleRepo   model.UserRoleRepo
+	roleActionRepo model.RoleActionRepo
+	config         *conf.AppConfig
+	actionIDs      []int64
+	db             *sqlx.DB
 }
 
 var testApp *appTesting
@@ -34,28 +35,21 @@ func TestMain(m *testing.M) {
 	testApp.actionRepo = NewMysqlActionRepo(db)
 	testApp.roleRepo = NewMysqlRoleRepo(db)
 	testApp.userRepo = NewMysqlUserRepo(db)
+	testApp.userActionRepo = NewMysqlUserActionRepo(db)
+	testApp.userRoleRepo = NewMysqlUserRoleRepo(db)
+	testApp.roleActionRepo = NewMysqlRoleActionRepo(db)
 	testApp.config = config
 	testApp.db = db
 
-	err := testApp.createActionTable()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	err = testApp.createRoleTable()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	err = testApp.createUserTable()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	mig := migrate.NewMigrator(db)
+
+	mig.Up()
+	mig.SeedTestData()
 
 	code := m.Run()
 
-	cleanUp()
+	mig.Down()
+	testApp.db.Close()
 	os.Exit(code)
 }
 
@@ -66,13 +60,4 @@ func initDb(config *conf.DbConfig) (*sqlx.DB, error) {
 	}
 
 	return db, nil
-}
-
-func cleanUp() {
-	fmt.Println("-----------clean-up-----------")
-
-	testApp.dropActionTable()
-	testApp.dropRoleTable()
-	testApp.dropUserTable()
-	testApp.db.Close()
 }
