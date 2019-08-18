@@ -12,15 +12,16 @@ import (
 )
 
 type appTesting struct {
-	actionRepo     model.ActionRepo
-	roleRepo       model.RoleRepo
-	userRepo       model.UserRepo
-	userActionRepo model.UserActionRepo
-	userRoleRepo   model.UserRoleRepo
-	roleActionRepo model.RoleActionRepo
-	config         *conf.AppConfig
-	actionIDs      []int64
-	db             *sqlx.DB
+	actionRepo       model.ActionRepo
+	roleRepo         model.RoleRepo
+	userRepo         model.UserRepo
+	userActionRepo   model.UserActionRepo
+	userRoleRepo     model.UserRoleRepo
+	roleActionRepo   model.RoleActionRepo
+	tokenHistoryRepo model.TokenHistoryRepo
+	config           *conf.AppConfig
+	actionIDs        []int64
+	db               *sqlx.DB
 }
 
 var testApp *appTesting
@@ -38,6 +39,7 @@ func TestMain(m *testing.M) {
 	testApp.userActionRepo = NewMysqlUserActionRepo(db)
 	testApp.userRoleRepo = NewMysqlUserRoleRepo(db)
 	testApp.roleActionRepo = NewMysqlRoleActionRepo(db)
+	testApp.tokenHistoryRepo = NewMysqlTokenHistoryRepo(db)
 	testApp.config = config
 	testApp.db = db
 

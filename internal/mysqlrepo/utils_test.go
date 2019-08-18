@@ -3,6 +3,7 @@ package mysqlrepo
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vespaiach/auth/internal/comtype"
 
@@ -42,6 +43,18 @@ func TestSQLWhereBuilder(t *testing.T) {
 		require.True(t, strings.Contains(sql, "LIKE :name"))
 		require.Equal(t, strings.Count(sql, "AND"), 1)
 	})
+
+	t.Run("date_conditions_create_success", func(t *testing.T) {
+		t.Parallel()
+
+		sql := sqlWhereBuilder(" AND ", map[string]interface{}{
+			"to_date":   time.Now().Format(comtype.DateTimeLayout),
+			"from_date": time.Now().Format(comtype.DateTimeLayout),
+		})
+
+		require.True(t, strings.Contains(sql, "created_at >= :from_date"))
+		require.True(t, strings.Contains(sql, "created_at <= :to_date"))
+	})
 }
 
 func TestSortingBuilder(t *testing.T) {
@@ -52,7 +65,7 @@ func TestSortingBuilder(t *testing.T) {
 
 		sql := sqlSortingBuilder(map[string]comtype.SortDirection{})
 
-		require.Equal(t, sql, "id DESC")
+		require.Equal(t, sql, "created_at DESC")
 	})
 
 	t.Run("one_field_create_success", func(t *testing.T) {

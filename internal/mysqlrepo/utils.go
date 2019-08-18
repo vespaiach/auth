@@ -15,6 +15,15 @@ func sqlWhereBuilder(join string, m map[string]interface{}) string {
 
 	st := make([]string, 0, lenmap)
 	for key, val := range m {
+		switch key {
+		case "from_date":
+			st = append(st, "created_at >= :from_date")
+			continue
+		case "to_date":
+			st = append(st, "created_at <= :to_date")
+			continue
+		}
+
 		switch val.(type) {
 		case string:
 			st = append(st, fmt.Sprintf("%s LIKE :%s", key, key))
@@ -29,7 +38,7 @@ func sqlWhereBuilder(join string, m map[string]interface{}) string {
 func sqlSortingBuilder(m map[string]comtype.SortDirection) string {
 	lenmap := len(m)
 	if lenmap == 0 {
-		return "id DESC"
+		return "created_at DESC"
 	}
 
 	st := make([]string, 0, lenmap)
