@@ -145,7 +145,7 @@ FROM roles
 %s ;`
 
 // Query a list of roles
-func (r *MysqlRoleRepo) Query(page int64, perPage int64, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.Role, int64, error) {
+func (r *MysqlRoleRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.Role, int64, error) {
 	conditions := sqlWhereBuilder(" AND ", filters)
 	sortings := sqlSortingBuilder(sorts)
 	filters = sqlLikeConditionFilter(filters)

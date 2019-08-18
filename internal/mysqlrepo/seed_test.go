@@ -1,9 +1,15 @@
 package mysqlrepo
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/vespaiach/auth/internal/model"
 )
 
 var (
@@ -167,6 +173,7 @@ func (t *appTesting) createRoleWithName(name string) (int64, error) {
 
 	return id, nil
 }
+
 func (t *appTesting) createUserWithName(name string) (int64, error) {
 	stmt, err := t.db.Prepare(sqlCreateUser)
 	if err != nil {
@@ -184,4 +191,31 @@ func (t *appTesting) createUserWithName(name string) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func (t *appTesting) createTokenHistory(beforeSave func(*model.TokenHistory)) error {
+	history := &model.TokenHistory{
+		UID:         uuid.New().String(),
+		UserID:      1,
+		AccessToken: "Access Token",
+		CreatedAt:   time.Now(),
+	}
+
+	if beforeSave != nil {
+		beforeSave(history)
+	}
+
+	res, err := t.db.NamedExec(`
+	INSERT INTO token_histories (uid, user_id, access_token, refresh_token, created_at) 
+	VALUES (:uid, :user_id, :access_token, :refresh_token, :created_at)`, history)
+	if err != nil {
+		return err
+	}
+
+	rowAffected, err := res.RowsAffected()
+	if err != nil || rowAffected == 0 {
+		return errors.New("couldn't create token-history")
+	}
+
+	return nil
 }
