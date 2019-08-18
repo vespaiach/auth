@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/vespaiach/auth/internal/comtype"
 )
 
 // UserRole model
@@ -17,14 +19,14 @@ type UserRole struct {
 // UserRoleRepo defines user-role repo
 type UserRoleRepo interface {
 	// GetByID gets user-role by ID
-	GetByID(id int64) (*UserRole, error)
+	GetByID(id int64) (*UserRole, *comtype.CommonError)
 
 	// Create a new user-role
-	Create(userID int64, roleID int64) (int64, error)
+	Create(userID int64, roleID int64) (int64, *comtype.CommonError)
 
 	// Delete user-role
-	Delete(id int64) error
+	Delete(id int64) *comtype.CommonError
 
 	// Query a list of user-roles
-	Query(page int, perPage int, filters map[string]interface{}) ([]*UserRole, int64, error)
+	Query(take int, filters map[string]interface{}) ([]*UserRole, *comtype.CommonError)
 }

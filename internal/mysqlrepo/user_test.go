@@ -15,12 +15,11 @@ func TestQueryUser(t *testing.T) {
 
 		filter := map[string]interface{}{"username": "admin"}
 		sort := map[string]comtype.SortDirection{"full_name": comtype.Ascending}
-		users, total, err := testApp.userRepo.Query(1, 10, filter, sort)
+		users, err := testApp.userRepo.Query(10, filter, sort)
 
 		require.Nil(t, err)
 		require.NotNil(t, users)
 		require.Len(t, users, 1)
-		require.Equal(t, int64(1), total)
 	})
 
 	t.Run("query_user_by_active_success", func(t *testing.T) {
@@ -28,12 +27,11 @@ func TestQueryUser(t *testing.T) {
 
 		filter := map[string]interface{}{"active": false}
 		sort := map[string]comtype.SortDirection{}
-		users, total, err := testApp.userRepo.Query(1, 10, filter, sort)
+		users, err := testApp.userRepo.Query(10, filter, sort)
 
 		require.Nil(t, err)
 		require.NotNil(t, users)
 		require.Len(t, users, 0)
-		require.Zero(t, total)
 	})
 
 	t.Run("get_user_by_id_success", func(t *testing.T) {
@@ -48,6 +46,16 @@ func TestQueryUser(t *testing.T) {
 		require.Equal(t, "admin@test.com", user.Email)
 	})
 
+	t.Run("get_user_by_id_not_found", func(t *testing.T) {
+		t.Parallel()
+
+		user, err := testApp.userRepo.GetByID(-1)
+
+		require.NotNil(t, err)
+		require.True(t, err.Is(comtype.ErrDataNotFound))
+		require.Nil(t, user)
+	})
+
 	t.Run("get_user_by_username_success", func(t *testing.T) {
 		t.Parallel()
 
@@ -57,6 +65,14 @@ func TestQueryUser(t *testing.T) {
 		require.Equal(t, int64(2), user.ID)
 		require.Equal(t, "staff", user.Username)
 		require.True(t, user.Active)
+	})
+
+	t.Run("get_user_by_username_not_found", func(t *testing.T) {
+		t.Parallel()
+
+		user, err := testApp.userRepo.GetByUsername("----____PDDDDstaff")
+		require.Nil(t, err)
+		require.Nil(t, user)
 	})
 }
 

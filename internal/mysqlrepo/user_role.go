@@ -5,7 +5,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/model"
 )
@@ -51,22 +50,20 @@ LIMIT 1;
 `
 
 // GetByID find a user-role by its ID
-func (r *MysqlUserRoleRepo) GetByID(id int64) (*model.UserRole, error) {
+func (r *MysqlUserRoleRepo) GetByID(id int64) (*model.UserRole, *comtype.CommonError) {
 	rows, err := r.DbClient.Queryx(sqlGetUserRoleByID, id)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlUserRoleRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, comtype.ErrDataNotFound
+		return nil, comtype.NewCommonError(nil, "MysqlUserRoleRepo - GetByID:", comtype.ErrDataNotFound, nil)
 	}
 
 	userRole, err := mapUserRoleRow(rows)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlUserRoleRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 
 	return userRole, nil
@@ -77,23 +74,20 @@ INSERT INTO user_roles(user_id, role_id) VALUES(?, ?);
 `
 
 // Create a new user-role
-func (r *MysqlUserRoleRepo) Create(userID int64, roleID int64) (int64, error) {
+func (r *MysqlUserRoleRepo) Create(userID int64, roleID int64) (int64, *comtype.CommonError) {
 	stmt, err := r.DbClient.Prepare(sqlCreateUserRole)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlUserRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	res, err := stmt.Exec(userID, roleID)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlUserRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlUserRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return lastID, nil
@@ -104,23 +98,20 @@ DELETE FROM user_roles WHERE user_roles.id = ?;
 `
 
 // Delete user-role
-func (r *MysqlUserRoleRepo) Delete(id int64) error {
+func (r *MysqlUserRoleRepo) Delete(id int64) *comtype.CommonError {
 	stmt, err := r.DbClient.Prepare(sqlDeleteUserRole)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlUserRoleRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	res, err := stmt.Exec(id)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlUserRoleRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	rowAffected, err := res.RowsAffected()
 	if err != nil || rowAffected == 0 {
-		log.Error("MysqlUserRoleRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlUserRoleRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return nil
@@ -152,68 +143,39 @@ INNER JOIN roles
 ON user_roles.role_id = roles.id
 %s
 ORDER BY user_roles.created_at DESC
-LIMIT :offset, :limit;`
-
-const sqlCountListUserRole = `
-SELECT Count(*)
-FROM users INNER JOIN user_roles
-ON users.id = user_roles.user_id
-INNER JOIN roles
-ON user_roles.role_id = roles.id
-%s ;`
+LIMIT :limit;`
 
 // Query a list of user-roles
-func (r *MysqlUserRoleRepo) Query(page int, perPage int, filters map[string]interface{}) ([]*model.UserRole, int64, error) {
+func (r *MysqlUserRoleRepo) Query(take int, filters map[string]interface{}) ([]*model.UserRole, *comtype.CommonError) {
 	conditions := sqlWhereBuilder(" AND ", filters)
 	filters = sqlLikeConditionFilter(filters)
-	filters["offset"] = (page - 1) * perPage
-	filters["limit"] = perPage
-
-	ch := make(chan int64)
-	go func() {
-		var totals int64
-		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListUserRole, conditions), filters)
-		if err != nil {
-			log.Error("MysqlUserRoleRepo - Query:", err)
-			ch <- int64(-1)
-			return
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
-			ch <- int64(-1)
-			return
-		}
-
-		rows.Scan(&totals)
-		ch <- totals
-		close(ch)
-	}()
+	if take == 0 {
+		filters["limit"] = 100
+	} else {
+		filters["limit"] = take
+	}
 
 	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListUserRole, conditions), filters)
 	if err != nil {
-		log.Error("MysqlUserRoleRepo - Query:", err)
 		fmt.Println(fmt.Sprintf(sqlListUserRole, conditions))
-		return nil, 0, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlUserRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
-	results := make([]*model.UserRole, 0, perPage)
+	results := make([]*model.UserRole, 0, take)
 	for rows.Next() {
 		ac, err := mapUserRoleRow(rows)
 		if err != nil {
-			log.Error("MysqlUserRoleRepo - Query:", err)
-			return nil, 0, comtype.ErrQueryDataFailed
+			return nil, comtype.NewCommonError(err, "MysqlUserRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 		}
 		results = append(results, ac)
 	}
 
-	total := <-ch
-	if total == -1 {
-		return nil, 0, comtype.ErrQueryDataFailed
+	if rows.Err() != nil {
+		return nil, comtype.NewCommonError(rows.Err(), "MysqlUserRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 	}
 
-	return results, total, nil
+	return results, nil
 }
 
 func mapUserRoleRow(rows *sqlx.Rows) (*model.UserRole, error) {

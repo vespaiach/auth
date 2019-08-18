@@ -49,8 +49,13 @@ CREATE TABLE IF NOT EXISTS "token_histories" (
   "uid" VARCHAR(36) NOT NULL,
   "user_id" BIGINT(20) UNSIGNED NOT NULL,
   "access_token" VARCHAR(1024) NOT NULL,
-  "refresh_token" VARCHAR(1024) NULL,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "refresh_token" VARCHAR(1024) NOT NULL DEFAULT '',
+  "remote_addr" VARCHAR(512) NOT NULL DEFAULT '',
+  "x_forwarded_for" VARCHAR(512) NOT NULL DEFAULT '',
+  "x_real_ip" VARCHAR(512) NOT NULL DEFAULT '',
+  "user_agent" VARCHAR(512) NOT NULL DEFAULT '',
+  "created_at" TIMESTAMP NOT NULL,
+  "expired_at" TIMESTAMP NOT NULL,
   PRIMARY KEY ("uid"),
   UNIQUE INDEX "uid_uniq" ("uid" ASC))
 ENGINE = InnoDB

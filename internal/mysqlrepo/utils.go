@@ -68,3 +68,14 @@ func sqlLikeConditionFilter(m map[string]interface{}) map[string]interface{} {
 
 	return m
 }
+
+func sqlUpdateBuilder(params map[string]interface{}, ignores map[string]bool) string {
+	fields := []string{}
+	for key := range params {
+		if _, ok := ignores[key]; !ok {
+			fields = append(fields, fmt.Sprintf("%s = :%s", key, key))
+		}
+	}
+
+	return strings.Join(fields, ",")
+}

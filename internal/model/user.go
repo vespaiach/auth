@@ -22,20 +22,20 @@ type User struct {
 // UserRepo defines user repo
 type UserRepo interface {
 	// GetByID gets user by user ID
-	GetByID(id int64) (*User, error)
+	GetByID(id int64) (*User, *comtype.CommonError)
 
 	// GetByUsername gets user by user's username
-	GetByUsername(username string) (*User, error)
+	GetByUsername(username string) (*User, *comtype.CommonError)
 
 	// GetByEmail gets user by user's email
-	GetByEmail(email string) (*User, error)
+	GetByEmail(email string) (*User, *comtype.CommonError)
 
 	// Create a new user
-	Create(fullName string, username string, hashed string, email string) (int64, error)
+	Create(fullName string, username string, hashed string, email string) (int64, *comtype.CommonError)
 
 	// Update user
-	Update(id int64, fields map[string]interface{}) error
+	Update(id int64, fields map[string]interface{}) *comtype.CommonError
 
 	// Query a list of users
-	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*User, int64, error)
+	Query(take int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*User, *comtype.CommonError)
 }

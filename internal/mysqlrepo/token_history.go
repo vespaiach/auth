@@ -1,11 +1,9 @@
 package mysqlrepo
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/model"
 )
@@ -25,123 +23,57 @@ func NewMysqlTokenHistoryRepo(db *sqlx.DB) model.TokenHistoryRepo {
 var sqlGetTokenHistoryByID = `
 SELECT *
 FROM token_histories
-WHERE token_histories.id =?
-LIMIT 1;
-`
+WHERE token_histories.user_id = ?
+;`
 
-// GetByID find a token-history by its ID
-func (r *MysqlTokenHistoryRepo) GetByID(id int64) (*model.TokenHistory, error) {
-	rows, err := r.DbClient.Queryx(sqlGetTokenHistoryByID, id)
+// GetByUserID find a token-history by its user's ID
+func (r *MysqlTokenHistoryRepo) GetByUserID(userID int64) ([]*model.TokenHistory, *comtype.CommonError) {
+	rows, err := r.DbClient.Queryx(sqlGetTokenHistoryByID, userID)
 	if err != nil {
-		log.Error("MysqlTokenHistoryRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlTokenHistoryRepo - GetByUserID:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
-	if !rows.Next() {
-		return nil, comtype.ErrDataNotFound
-	}
-
-	tokenHistory := new(model.TokenHistory)
-	err = rows.StructScan(tokenHistory)
-	if err != nil {
-		log.Error("MysqlTokenHistoryRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
-	}
-
-	return tokenHistory, nil
-}
-
-var sqlCreateTokenHistory = `
-INSERT INTO token_histories(uid, user_id, access_token, refresh_token, created_at) VALUES(?, ?, ?, ?, ?);
-`
-
-// Create a new token-history
-func (r *MysqlTokenHistoryRepo) Create(uid string, userID int64, accessToken string, refreshToken string, createdAt time.Time) error {
-	stmt, err := r.DbClient.Prepare(sqlCreateTokenHistory)
-	if err != nil {
-		log.Error("MysqlTokenHistoryRepo - Create:", err)
-		return comtype.ErrCreateDataFailed
-	}
-
-	res, err := stmt.Exec(uid, userID, accessToken, refreshToken, createdAt)
-	if err != nil {
-		log.Error("MysqlTokenHistoryRepo - Create:", err)
-		return comtype.ErrCreateDataFailed
-	}
-
-	rowAffected, err := res.RowsAffected()
-	if err != nil || rowAffected == 0 {
-		log.Error("MysqlTokenHistoryRepo - Create:", err)
-		return comtype.ErrCreateDataFailed
-	}
-
-	return nil
-}
-
-const sqlListTokenHistory = `
-SELECT *
-FROM token_histories
-%s
-ORDER BY %s 
-LIMIT :offset, :limit;`
-
-const sqlCountListTokenHistory = `
-SELECT Count(*)
-FROM token_histories
-%s ;`
-
-// Query a list of token_histories
-func (r *MysqlTokenHistoryRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.TokenHistory, int64, error) {
-	conditions := sqlWhereBuilder(" AND ", filters)
-	sortings := sqlSortingBuilder(sorts)
-	filters = sqlLikeConditionFilter(filters)
-	filters["offset"] = (page - 1) * perPage
-	filters["limit"] = perPage
-
-	ch := make(chan int64)
-	go func() {
-		var totals int64
-		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListTokenHistory, conditions), filters)
-		if err != nil {
-			log.Error("MysqlTokenHistoryRepo - Query:", err)
-			ch <- int64(-1)
-			return
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
-			ch <- int64(-1)
-			return
-		}
-
-		rows.Scan(&totals)
-		ch <- totals
-		close(ch)
-	}()
-
-	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListTokenHistory, conditions, sortings), filters)
-	if err != nil {
-		log.Error("MysqlTokenHistoryRepo - Query:", err)
-		return nil, 0, comtype.ErrQueryDataFailed
-	}
-	defer rows.Close()
-
-	results := make([]*model.TokenHistory, 0, perPage)
+	results := make([]*model.TokenHistory, 0)
 	for rows.Next() {
 		var ac model.TokenHistory
 		rows.StructScan(&ac)
 		if err != nil {
-			log.Error("MysqlTokenHistoryRepo - Query:", err)
-			return nil, 0, comtype.ErrQueryDataFailed
+			return nil, comtype.NewCommonError(err, "MysqlTokenHistoryRepo - GetByUserID:", comtype.ErrQueryDataFail, nil)
 		}
 		results = append(results, &ac)
 	}
 
-	total := <-ch
-	if total == -1 {
-		return nil, 0, comtype.ErrQueryDataFailed
+	err = rows.Err()
+	if err != nil {
+		return nil, comtype.NewCommonError(err, "MysqlTokenHistoryRepo - GetByUserID:", comtype.ErrQueryDataFail, nil)
 	}
 
-	return results, total, nil
+	return results, nil
+}
+
+var sqlCreateTokenHistory = `
+INSERT INTO token_histories(uid, user_id, access_token, refresh_token, remote_addr, x_forwarded_for, x_real_ip, user_agent, 
+	created_at, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+
+// Save a token-history
+func (r *MysqlTokenHistoryRepo) Save(uid string, userID int64, accessToken string, refreshToken string, remoteAddr string,
+	xForwardedFor string, xRealIP string, userAgent string, createdAt time.Time, expiredAt time.Time) *comtype.CommonError {
+	stmt, err := r.DbClient.Prepare(sqlCreateTokenHistory)
+	if err != nil {
+		return comtype.NewCommonError(err, "MysqlTokenHistoryRepo - Create:", comtype.ErrHandleDataFail, nil)
+	}
+
+	res, err := stmt.Exec(uid, userID, accessToken, refreshToken, remoteAddr, xForwardedFor, xRealIP, userAgent, createdAt, expiredAt)
+	if err != nil {
+		return comtype.NewCommonError(err, "MysqlTokenHistoryRepo - Create:", comtype.ErrHandleDataFail, nil)
+	}
+
+	rowAffected, err := res.RowsAffected()
+	if err != nil || rowAffected == 0 {
+		return comtype.NewCommonError(err, "MysqlTokenHistoryRepo - Create:", comtype.ErrHandleDataFail, nil)
+	}
+
+	return nil
 }
