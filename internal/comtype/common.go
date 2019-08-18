@@ -1,5 +1,7 @@
 package comtype
 
+import "time"
+
 // ActivateStatus will have value: 1, 2, 3
 type ActivateStatus int
 
@@ -21,3 +23,6 @@ const (
 
 // Key is a general Key type
 type Key string
+
+// DateTimeLayout Layout
+var DateTimeLayout = time.RFC3339

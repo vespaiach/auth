@@ -32,5 +32,5 @@ type RoleRepo interface {
 	Update(id int64, fields map[string]interface{}) error
 
 	// Query a list of roles
-	Query(page int64, perPage int64, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Role, int64, error)
+	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Role, int64, error)
 }
