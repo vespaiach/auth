@@ -40,4 +40,9 @@ INSERT INTO user_roles (id, user_id, role_id) VALUES (2, 1, 2);
 INSERT INTO user_roles (id, user_id, role_id) VALUES (3, 2, 2);
 
 INSERT INTO user_actions (id, user_id, action_id) VALUES (1, 2, 10);
+
+INSERT INTO token_histories (uid, user_id, access_token, refresh_token) VALUES ('aab5d5fd-70c1-11e5-a4fb-b026b977eb28', 1, 'access_token1', 'refresh_token1');
+INSERT INTO token_histories (uid, user_id, access_token, refresh_token) VALUES ('e65bedae-c17f-11e9-bf92-0242ac120002', 1, 'access_token2', 'refresh_token2');
+INSERT INTO token_histories (uid, user_id, access_token, refresh_token) VALUES ('f53a2a95-c17f-11e9-bf92-0242ac120002', 1, 'access_token3', null);
+INSERT INTO token_histories (uid, user_id, access_token, refresh_token) VALUES ('0b0727a5-c180-11e9-bf92-0242ac120002', 1, 'access_token4', null);
 `
