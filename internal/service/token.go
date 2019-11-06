@@ -1,9 +1,13 @@
 package service
 
 import (
-	"crypto/rsa"
+	"sort"
+	"time"
 
 	jwtgo "github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
+	"github.com/vespaiach/auth/internal/comtype"
+	"github.com/vespaiach/auth/internal/conf"
 	"github.com/vespaiach/auth/internal/model"
 )
 
@@ -12,56 +16,81 @@ var (
 	issuer           = "Vespaiach"
 )
 
-type accessTokenMapClaims struct {
+// TokenService interface
+type TokenService interface {
+	IssueToken(user *model.User, actions []*model.Action, roles []*model.Role, remoteAddr string, xForwardedFor string,
+		xRealIP string, userAgent string) (string, *comtype.CommonError)
+}
+
+// NewTokenService creates a struct that implement ITokenService
+func NewTokenService(appRepo *model.AppRepo, appConfig *conf.AppConfig) TokenService {
+	return &tokenService{
+		appConfig,
+		appRepo,
+	}
+}
+
+type tokenService struct {
+	appConfig *conf.AppConfig
+	appRepo   *model.AppRepo
+}
+
+// TokenClaims token's claims
+type TokenClaims struct {
 	jwtgo.StandardClaims
-	actions []string
+	Actions []string
+	Roles   []string
 }
 
-func issueAccessToken(u *model.User, id string, duration int64, privateKey *rsa.PrivateKey) (token string, err error) {
-	// duration := time.Duration(duration) * time.Minute
-	// actions := make([]string, len(u.Actions))
+func (ser *tokenService) IssueToken(user *model.User, actions []*model.Action, roles []*model.Role, remoteAddr string,
+	xForwardedFor string, xRealIP string, userAgent string) (string, *comtype.CommonError) {
+	duration := time.Duration(ser.appConfig.AccessTokenDuration) * time.Minute
+	actionStrings := make([]string, 0, len(actions))
+	roleStrings := make([]string, 0, len(roles))
 
-	// for _, a := range u.Actions {
-	// 	actions = append(actions, a.Name)
-	// }
+	for _, a := range actions {
+		actionStrings = append(actionStrings, a.ActionName)
+	}
 
-	// for _, r := range u.Roles {
-	// 	tmp := make([]string, len(r.Actions))
-	// 	for _, a := range r.Actions {
-	// 		tmp = append(tmp, a.Name)
-	// 	}
-	// 	actions = append(actions, tmp...)
-	// }
+	for _, r := range roles {
+		roleStrings = append(roleStrings, r.RoleName)
 
-	// accessTokenObj := jwtgo.New(jwtgo.GetSigningMethod(signingAlgorithm))
+		tmp := make([]string, 0, len(r.Actions))
+		for _, a := range r.Actions {
+			tmp = append(tmp, a.ActionName)
+		}
+		actionStrings = append(actionStrings, tmp...)
+	}
 
-	// accessTokenObj.Claims = accessTokenMapClaims{
-	// 	jwtgo.StandardClaims{
-	// 		Id:        id,
-	// 		Issuer:    issuer,
-	// 		Audience:  u.Username,
-	// 		IssuedAt:  time.Now().Unix(),
-	// 		ExpiresAt: time.Now().Add(duration).Unix(),
-	// 	},
-	// 	actions,
-	// }
+	sort.Strings(roleStrings)
+	sort.Strings(actionStrings)
 
-	// return accessTokenObj.SignedString(privateKey)
-	return "", nil
-}
+	uid := uuid.New().String()
+	createdAt := time.Now()
+	expiredAt := createdAt.Add(duration)
 
-func issueRefreshToken(u *model.User, id string, duration int, privateKey *rsa.PrivateKey) (token string, err error) {
-	// tokenObj := jwtgo.New(jwtgo.GetSigningMethod(signingAlgorithm))
+	accessTokenObj := jwtgo.NewWithClaims(jwtgo.SigningMethodHS256, TokenClaims{
+		jwtgo.StandardClaims{
+			Id:        uid,
+			Issuer:    issuer,
+			Audience:  user.Username,
+			IssuedAt:  createdAt.Unix(),
+			ExpiresAt: expiredAt.Unix(),
+		},
+		actionStrings,
+		roleStrings,
+	})
 
-	// tokenObj.Claims = jwtgo.StandardClaims{
-	// 	Id:        id,
-	// 	Issuer:    issuer,
-	// 	Audience:  u.Username,
-	// 	IssuedAt:  time.Now().Unix(),
-	// 	ExpiresAt: time.Now().Add(time.Duration(duration) * time.Minute).Unix(),
-	// }
+	token, err := accessTokenObj.SignedString([]byte(ser.appConfig.SigningText))
+	if err != nil {
+		return "", comtype.NewCommonError(err, "TokenService - IssueToken:", comtype.ErrHandleDataFail, nil)
+	}
 
-	// return tokenObj.SignedString(privateKey)
+	saveerr := ser.appRepo.TokenHistoryRepo.Save(uid, user.ID, token, "", remoteAddr, xForwardedFor, xRealIP, userAgent,
+		createdAt, expiredAt)
+	if err != nil {
+		return "", saveerr
+	}
 
-	return "", nil
+	return token, nil
 }

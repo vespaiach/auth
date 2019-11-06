@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/vespaiach/auth/internal/comtype"
 )
 
 func TestQueryUserRole(t *testing.T) {
@@ -23,16 +24,25 @@ func TestQueryUserRole(t *testing.T) {
 		require.Equal(t, int64(2), ur.Role.ID)
 	})
 
+	t.Run("query_user_role_by_id_not_found", func(t *testing.T) {
+		t.Parallel()
+
+		ur, err := testApp.userRoleRepo.GetByID(-2)
+
+		require.NotNil(t, err)
+		require.True(t, err.Is(comtype.ErrDataNotFound))
+		require.Nil(t, ur)
+	})
+
 	t.Run("query_user_role_by_user_id_success", func(t *testing.T) {
 		t.Parallel()
 
-		urs, total, err := testApp.userRoleRepo.Query(1, 2, map[string]interface{}{
+		urs, err := testApp.userRoleRepo.Query(12, map[string]interface{}{
 			"user_id": 1,
 		})
 
 		require.Nil(t, err)
 		require.NotNil(t, urs)
-		require.Equal(t, int64(2), total)
 		require.Len(t, urs, 2)
 		require.NotNil(t, urs[0].User)
 		require.NotNil(t, urs[0].Role)
@@ -43,13 +53,12 @@ func TestQueryUserRole(t *testing.T) {
 	t.Run("query_user_role_by_role_id_fail", func(t *testing.T) {
 		t.Parallel()
 
-		urs, total, err := testApp.userRoleRepo.Query(1, 2, map[string]interface{}{
+		urs, err := testApp.userRoleRepo.Query(12, map[string]interface{}{
 			"role_id": 999999999,
 		})
 
 		require.Nil(t, err)
 		require.Len(t, urs, 0)
-		require.Zero(t, total)
 	})
 }
 

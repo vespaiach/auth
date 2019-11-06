@@ -20,17 +20,20 @@ type Role struct {
 // RoleRepo defines role repo
 type RoleRepo interface {
 	// GetByID gets role by role ID
-	GetByID(id int64) (*Role, error)
+	GetByID(id int64) (*Role, *comtype.CommonError)
+
+	// GetByUserID gets role by user ID
+	GetByUserID(id int64) ([]*Role, *comtype.CommonError)
 
 	// GetByEmail gets role by role's email
-	GetByName(rolename string) (*Role, error)
+	GetByName(rolename string) (*Role, *comtype.CommonError)
 
 	// Create a new role
-	Create(roleName string, roleDesc string) (int64, error)
+	Create(roleName string, roleDesc string) (int64, *comtype.CommonError)
 
 	// Update role
-	Update(id int64, fields map[string]interface{}) error
+	Update(id int64, fields map[string]interface{}) *comtype.CommonError
 
 	// Query a list of roles
-	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Role, int64, error)
+	Query(take int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Role, *comtype.CommonError)
 }

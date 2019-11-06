@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/vespaiach/auth/internal/comtype"
 )
 
 // UserAction model
@@ -17,14 +19,14 @@ type UserAction struct {
 // UserActionRepo defines user-action repo
 type UserActionRepo interface {
 	// GetByID gets user-action by ID
-	GetByID(id int64) (*UserAction, error)
+	GetByID(id int64) (*UserAction, *comtype.CommonError)
 
 	// Create a new user-action
-	Create(userID int64, roleID int64) (int64, error)
+	Create(userID int64, roleID int64) (int64, *comtype.CommonError)
 
 	// Delete user-action
-	Delete(id int64) error
+	Delete(id int64) *comtype.CommonError
 
 	// Query a list of user-actions
-	Query(page int, perPage int, filters map[string]interface{}) ([]*UserAction, int64, error)
+	Query(take int, filters map[string]interface{}) ([]*UserAction, *comtype.CommonError)
 }

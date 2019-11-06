@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/model"
 )
@@ -30,26 +29,58 @@ LIMIT 1;
 `
 
 // GetByID find a role by its ID
-func (r *MysqlRoleRepo) GetByID(id int64) (*model.Role, error) {
+func (r *MysqlRoleRepo) GetByID(id int64) (*model.Role, *comtype.CommonError) {
 	rows, err := r.DbClient.Queryx(sqlGetRoleByID, id)
 	if err != nil {
-		log.Error("MysqlRoleRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, comtype.ErrDataNotFound
+		return nil, nil
 	}
 
 	role := new(model.Role)
 	err = rows.StructScan(role)
 	if err != nil {
-		log.Error("MysqlRoleRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 
 	return role, nil
+}
+
+var sqlGetRoleByUserID = `
+SELECT 
+	roles.id,
+	roles.role_name,
+	roles.role_desc,
+	roles.active,
+	roles.created_at,
+	roles.updated_at
+FROM roles INNER JOIN user_roles
+ON roles.id = user_roles.role_id
+WHERE user_roles.user_id = ? AND active = 1;
+`
+
+// GetByUserID gets role by user ID
+func (r *MysqlRoleRepo) GetByUserID(id int64) ([]*model.Role, *comtype.CommonError) {
+	rows, err := r.DbClient.Queryx(sqlGetRoleByUserID, id)
+	if err != nil {
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByUserID:", comtype.ErrQueryDataFail, nil)
+	}
+	defer rows.Close()
+
+	results := make([]*model.Role, 0)
+	for rows.Next() {
+		var ac model.Role
+		rows.StructScan(&ac)
+		if err != nil {
+			return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByUserID:", comtype.ErrQueryDataFail, nil)
+		}
+		results = append(results, &ac)
+	}
+
+	return results, nil
 }
 
 var sqlGetRoleByName = `
@@ -60,23 +91,21 @@ LIMIT 1;
 `
 
 // GetByName find a role by its name
-func (r *MysqlRoleRepo) GetByName(name string) (*model.Role, error) {
+func (r *MysqlRoleRepo) GetByName(name string) (*model.Role, *comtype.CommonError) {
 	rows, err := r.DbClient.Queryx(sqlGetRoleByName, name)
 	if err != nil {
-		log.Error("MysqlRoleRepo - GetByName:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByName:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, comtype.ErrDataNotFound
+		return nil, comtype.NewCommonError(nil, "MysqlRoleRepo - GetByName:", comtype.ErrDataNotFound, nil)
 	}
 
 	role := new(model.Role)
 	err = rows.StructScan(role)
 	if err != nil {
-		log.Error("MysqlRoleRepo - GetByName:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - GetByName:", comtype.ErrQueryDataFail, nil)
 	}
 
 	return role, nil
@@ -87,46 +116,42 @@ INSERT INTO roles(role_name, role_desc) VALUES(?, ?);
 `
 
 // Create a new role
-func (r *MysqlRoleRepo) Create(name string, desc string) (int64, error) {
+func (r *MysqlRoleRepo) Create(name string, desc string) (int64, *comtype.CommonError) {
 	stmt, err := r.DbClient.Prepare(sqlCreateRole)
 	if err != nil {
-		log.Error("MysqlRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	res, err := stmt.Exec(name, desc)
 	if err != nil {
-		log.Error("MysqlRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
-		log.Error("MysqlRoleRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return lastID, nil
 }
 
 var sqlUpdateRole = `
-UPDATE roles
+UPDATE roles SET 
 %s
 WHERE roles.id = :id;
 `
 
 // Update role
-func (r *MysqlRoleRepo) Update(id int64, fields map[string]interface{}) error {
-	conditions := sqlWhereBuilder(", ", fields)
-	if len(conditions) == 0 {
-		log.Error("MysqlRoleRepo - Update:", errors.New("empty updating fields"))
-		return comtype.ErrUpdateDataFailed
+func (r *MysqlRoleRepo) Update(id int64, fields map[string]interface{}) *comtype.CommonError {
+	if len(fields) == 0 {
+		return comtype.NewCommonError(errors.New("empty updating fields"), "MysqlRoleRepo - Update:",
+			comtype.ErrHandleDataFail, nil)
 	}
 
-	_, err := r.DbClient.NamedExec(fmt.Sprintf(sqlUpdateRole, conditions), fields)
+	fields["id"] = id
+	_, err := r.DbClient.NamedExec(fmt.Sprintf(sqlUpdateRole, sqlUpdateBuilder(fields, map[string]bool{"id": true})), fields)
 	if err != nil {
-		log.Error("MysqlRoleRepo - Update:", err)
-		return comtype.ErrUpdateDataFailed
+		return comtype.NewCommonError(err, "MysqlRoleRepo - Update:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return nil
@@ -137,64 +162,38 @@ SELECT *
 FROM roles
 %s
 ORDER BY %s 
-LIMIT :offset, :limit;`
-
-const sqlCountListRole = `
-SELECT Count(*)
-FROM roles
-%s ;`
+LIMIT :limit;`
 
 // Query a list of roles
-func (r *MysqlRoleRepo) Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.Role, int64, error) {
+func (r *MysqlRoleRepo) Query(take int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*model.Role, *comtype.CommonError) {
 	conditions := sqlWhereBuilder(" AND ", filters)
 	sortings := sqlSortingBuilder(sorts)
 	filters = sqlLikeConditionFilter(filters)
-	filters["offset"] = (page - 1) * perPage
-	filters["limit"] = perPage
-
-	ch := make(chan int64)
-	go func() {
-		var totals int64
-		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListRole, conditions), filters)
-		if err != nil {
-			log.Error("MysqlRoleRepo - Query:", err)
-			ch <- int64(-1)
-			return
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
-			ch <- int64(-1)
-			return
-		}
-
-		rows.Scan(&totals)
-		ch <- totals
-		close(ch)
-	}()
+	if take == 0 {
+		filters["limit"] = 100
+	} else {
+		filters["limit"] = take
+	}
 
 	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListRole, conditions, sortings), filters)
 	if err != nil {
-		log.Error("MysqlRoleRepo - Query:", err)
-		return nil, 0, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
-	results := make([]*model.Role, 0, perPage)
+	results := make([]*model.Role, 0, take)
 	for rows.Next() {
 		var ac model.Role
 		rows.StructScan(&ac)
 		if err != nil {
-			log.Error("MysqlRoleRepo - Query:", err)
-			return nil, 0, comtype.ErrQueryDataFailed
+			return nil, comtype.NewCommonError(err, "MysqlRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 		}
 		results = append(results, &ac)
 	}
 
-	total := <-ch
-	if total == -1 {
-		return nil, 0, comtype.ErrQueryDataFailed
+	if rows.Err() != nil {
+		return nil, comtype.NewCommonError(rows.Err(), "MysqlRoleRepo - Query:", comtype.ErrQueryDataFail, nil)
 	}
 
-	return results, total, nil
+	return results, nil
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/vespaiach/auth/internal/comtype"
 	"github.com/vespaiach/auth/internal/model"
 )
@@ -49,22 +48,20 @@ LIMIT 1;
 `
 
 // GetByID find a role-action by its ID
-func (r *MysqlRoleActionRepo) GetByID(id int64) (*model.RoleAction, error) {
+func (r *MysqlRoleActionRepo) GetByID(id int64) (*model.RoleAction, *comtype.CommonError) {
 	rows, err := r.DbClient.Queryx(sqlGetRoleActionByID, id)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleActionRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, comtype.ErrDataNotFound
+		return nil, comtype.NewCommonError(nil, "MysqlRoleActionRepo - GetByID:", comtype.ErrDataNotFound, nil)
 	}
 
 	roleAction, err := mapRoleActionRow(rows)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - GetByID:", err)
-		return nil, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleActionRepo - GetByID:", comtype.ErrQueryDataFail, nil)
 	}
 
 	return roleAction, nil
@@ -75,23 +72,20 @@ INSERT INTO role_actions(role_id, action_id) VALUES(?, ?);
 `
 
 // Create a new role-action
-func (r *MysqlRoleActionRepo) Create(roleID int64, actionID int64) (int64, error) {
+func (r *MysqlRoleActionRepo) Create(roleID int64, actionID int64) (int64, *comtype.CommonError) {
 	stmt, err := r.DbClient.Prepare(sqlCreateRoleAction)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleActionRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	res, err := stmt.Exec(roleID, actionID)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleActionRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	lastID, err := res.LastInsertId()
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Create:", err)
-		return 0, comtype.ErrCreateDataFailed
+		return 0, comtype.NewCommonError(err, "MysqlRoleActionRepo - Create:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return lastID, nil
@@ -102,23 +96,20 @@ DELETE FROM role_actions WHERE role_actions.id = ?;
 `
 
 // Delete role-action
-func (r *MysqlRoleActionRepo) Delete(id int64) error {
+func (r *MysqlRoleActionRepo) Delete(id int64) *comtype.CommonError {
 	stmt, err := r.DbClient.Prepare(sqlDeleteRoleAction)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlRoleActionRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	res, err := stmt.Exec(id)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlRoleActionRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	rowAffected, err := res.RowsAffected()
 	if err != nil || rowAffected == 0 {
-		log.Error("MysqlRoleActionRepo - Delete:", err)
-		return comtype.ErrDeleteDataFailed
+		return comtype.NewCommonError(err, "MysqlRoleActionRepo - Delete:", comtype.ErrHandleDataFail, nil)
 	}
 
 	return nil
@@ -148,68 +139,39 @@ INNER JOIN actions
 ON role_actions.action_id = actions.id
 %s
 ORDER BY role_actions.created_at DESC
-LIMIT :offset, :limit;`
-
-const sqlCountListRoleAction = `
-SELECT Count(*)
-FROM roles INNER JOIN role_actions
-ON roles.id = role_actions.role_id
-INNER JOIN actions
-ON role_actions.action_id = actions.id
-%s ;`
+LIMIT :limit;`
 
 // Query a list of role-actions
-func (r *MysqlRoleActionRepo) Query(page int, perPage int, filters map[string]interface{}) ([]*model.RoleAction, int64, error) {
+func (r *MysqlRoleActionRepo) Query(take int, filters map[string]interface{}) ([]*model.RoleAction, *comtype.CommonError) {
 	conditions := sqlWhereBuilder(" AND ", filters)
 	filters = sqlLikeConditionFilter(filters)
-	filters["offset"] = (page - 1) * perPage
-	filters["limit"] = perPage
-
-	ch := make(chan int64)
-	go func() {
-		var totals int64
-		rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlCountListRoleAction, conditions), filters)
-		if err != nil {
-			log.Error("MysqlRoleActionRepo - Query:", err)
-			ch <- int64(-1)
-			return
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
-			ch <- int64(-1)
-			return
-		}
-
-		rows.Scan(&totals)
-		ch <- totals
-		close(ch)
-	}()
+	if take == 0 {
+		filters["limit"] = 100
+	} else {
+		filters["limit"] = take
+	}
 
 	rows, err := r.DbClient.NamedQuery(fmt.Sprintf(sqlListRoleAction, conditions), filters)
 	if err != nil {
-		log.Error("MysqlRoleActionRepo - Query:", err)
 		fmt.Println(fmt.Sprintf(sqlListRoleAction, conditions))
-		return nil, 0, comtype.ErrQueryDataFailed
+		return nil, comtype.NewCommonError(err, "MysqlRoleActionRepo - Query:", comtype.ErrHandleDataFail, nil)
 	}
 	defer rows.Close()
 
-	results := make([]*model.RoleAction, 0, perPage)
+	results := make([]*model.RoleAction, 0, take)
 	for rows.Next() {
 		ac, err := mapRoleActionRow(rows)
 		if err != nil {
-			log.Error("MysqlRoleActionRepo - Query:", err)
-			return nil, 0, comtype.ErrQueryDataFailed
+			return nil, comtype.NewCommonError(err, "MysqlRoleActionRepo - Query:", comtype.ErrHandleDataFail, nil)
 		}
 		results = append(results, ac)
 	}
 
-	total := <-ch
-	if total == -1 {
-		return nil, 0, comtype.ErrQueryDataFailed
+	if rows.Err() != nil {
+		return nil, comtype.NewCommonError(rows.Err(), "MysqlRoleActionRepo - Query:", comtype.ErrHandleDataFail, nil)
 	}
 
-	return results, total, nil
+	return results, nil
 }
 
 func mapRoleActionRow(rows *sqlx.Rows) (*model.RoleAction, error) {

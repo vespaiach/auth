@@ -22,6 +22,7 @@ type appTesting struct {
 	config           *conf.AppConfig
 	actionIDs        []int64
 	db               *sqlx.DB
+	mig              *migrate.Migrator
 }
 
 var testApp *appTesting
@@ -30,7 +31,7 @@ var testApp *appTesting
 func TestMain(m *testing.M) {
 	config := conf.LoadAppConfig()
 
-	db, _ := initDb(config.DbConfig)
+	db, _ := initDb(config)
 
 	testApp = new(appTesting)
 	testApp.actionRepo = NewMysqlActionRepo(db)
@@ -44,7 +45,9 @@ func TestMain(m *testing.M) {
 	testApp.db = db
 
 	mig := migrate.NewMigrator(db)
+	testApp.mig = mig
 
+	mig.Down()
 	mig.Up()
 	mig.SeedTestData()
 
@@ -55,7 +58,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func initDb(config *conf.DbConfig) (*sqlx.DB, error) {
+func initDb(config *conf.AppConfig) (*sqlx.DB, error) {
 	db, err := sqlx.Open("mysql", config.BuildMysqlDSN())
 	if err != nil {
 		return nil, err

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/vespaiach/auth/internal/comtype"
 )
 
 // RoleAction model
@@ -17,14 +19,14 @@ type RoleAction struct {
 // RoleActionRepo defines role-action repo
 type RoleActionRepo interface {
 	// GetByID gets role-action by ID
-	GetByID(id int64) (*RoleAction, error)
+	GetByID(id int64) (*RoleAction, *comtype.CommonError)
 
 	// Create a new role-action
-	Create(roleID int64, actionID int64) (int64, error)
+	Create(roleID int64, actionID int64) (int64, *comtype.CommonError)
 
 	// Delete role-action
-	Delete(id int64) error
+	Delete(id int64) *comtype.CommonError
 
 	// Query a list of role-actions
-	Query(page int, perPage int, filters map[string]interface{}) ([]*RoleAction, int64, error)
+	Query(take int, filters map[string]interface{}) ([]*RoleAction, *comtype.CommonError)
 }

@@ -19,17 +19,20 @@ type Action struct {
 // ActionRepo defines action repo
 type ActionRepo interface {
 	// GetByID gets action by action ID
-	GetByID(id int64) (*Action, error)
+	GetByID(id int64) (*Action, *comtype.CommonError)
+
+	// GetByUserID gets list of action by user ID
+	GetByUserID(userID int64) ([]*Action, *comtype.CommonError)
 
 	// GetByName gets action by action's name
-	GetByName(name string) (*Action, error)
+	GetByName(name string) (*Action, *comtype.CommonError)
 
 	// Create a new action
-	Create(name string, desc string) (int64, error)
+	Create(name string, desc string) (int64, *comtype.CommonError)
 
 	// Update action
-	Update(id int64, fields map[string]interface{}) error
+	Update(id int64, fields map[string]interface{}) *comtype.CommonError
 
 	// Query a list of actions
-	Query(page int, perPage int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Action, int64, error)
+	Query(take int, filters map[string]interface{}, sorts map[string]comtype.SortDirection) ([]*Action, *comtype.CommonError)
 }
