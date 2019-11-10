@@ -49,7 +49,7 @@ func main() {
 	tp.MakeRoleActionHandlers(mux, appService, appConfig, logger)
 	http.Handle("/", mux)
 
-	fmt.Println("transport http address", appConfig.ServerAddress, "msg listening")
+	fmt.Println("transport tp address", appConfig.ServerAddress, "msg listening")
 	fmt.Println(http.ListenAndServe(appConfig.ServerAddress, nil))
 }
 

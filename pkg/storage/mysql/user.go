@@ -4,6 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/vespaiach/auth/pkg/adding"
+	"github.com/vespaiach/auth/pkg/listing"
+	"github.com/vespaiach/auth/pkg/modifying"
+	"strings"
+	"time"
 )
 
 var sqlCreateUser = `INSERT INTO users(username, email, hash) VALUES(?, ?, ?);`
@@ -88,4 +92,62 @@ func (st *Storage) GetUsernameAndEmail(id int64) (string, string, error) {
 	}
 
 	return username, email, nil
+}
+
+var sqlUpdateUser = "UPDATE `users` SET %s WHERE `users`.id = :id;"
+
+func (st *Storage) ModifyUser(u modifying.User) error {
+	fields := make([]string, 0)
+	updating := make(map[string]interface{})
+
+	if len(u.Username) > 0 {
+		fields = append(fields, "`username`=:username")
+		updating["username"] = u.Username
+	}
+
+	if len(u.Email) > 0 {
+		fields = append(fields, "`email`=:email")
+		updating["email"] = u.Email
+	}
+
+	if u.Active.Valid {
+		fields = append(fields, "`active`=:active")
+		updating["active"] = u.Active.Bool
+	}
+
+	if len(fields) > 0 {
+		fields = append(fields, "updated_at=:updated_at")
+		updating["updated_at"] = time.Now()
+		updating["id"] = u.ID
+
+		_, err := st.DbClient.NamedExec(fmt.Sprintf(sqlUpdateUser, strings.Join(fields, ",")), updating)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+var sqlGetUser = "SELECT `id`, `username`, `email`, active, created_at, updated_at FROM `users` " +
+	"WHERE id = ? LIMIT 1;"
+
+func (st *Storage) GetUserByID(id int64) (*listing.User, error) {
+	rows, err := st.DbClient.Queryx(sqlGetUser, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	u := new(listing.User)
+	err = rows.Scan(&u.ID, &u.Username, &u.Email, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
 }

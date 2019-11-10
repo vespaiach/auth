@@ -133,8 +133,8 @@ func (unq *uniqInt) New() int {
 	return unq.order
 }
 
-// CreateUniqueString is to create unique string for testing
-func (m *Migrator) CreateUniqueString(prefix string) string {
+// createUniqueString is to create unique string for testing
+func (m *Migrator) createUniqueString(prefix string) string {
 	return fmt.Sprintf("%s%s", prefix, strconv.Itoa(inc.New()))
 }
 
@@ -213,15 +213,17 @@ func (m *Migrator) createSeedingServiceKey(beforeCreate func(map[string]interfac
 
 func (m *Migrator) createSeedingBunch(beforeCreate func(map[string]interface{})) int64 {
 	fields := map[string]interface{}{
-		"name": fmt.Sprintf("name_%s", strconv.Itoa(inc.New())),
-		"desc": fmt.Sprintf("desc_%s", strconv.Itoa(inc.New())),
+		"name":   fmt.Sprintf("name_%s", strconv.Itoa(inc.New())),
+		"desc":   fmt.Sprintf("desc_%s", strconv.Itoa(inc.New())),
+		"active": true,
 	}
 
 	if beforeCreate != nil {
 		beforeCreate(fields)
 	}
 
-	result, _ := m.db.NamedExec("INSERT INTO `bunch` (`name`, `desc`) VALUES (:name, :desc);", fields)
+	result, _ := m.db.NamedExec("INSERT INTO `bunch` (`name`, `desc`, active) VALUES (:name, :desc, :active);",
+		fields)
 	id, _ := result.LastInsertId()
 
 	return id
@@ -243,4 +245,37 @@ func (m *Migrator) createSeedingUser(beforeCreate func(map[string]interface{})) 
 	id, _ := result.LastInsertId()
 
 	return id
+}
+
+func (m *Migrator) getServiceKeyByID(id int64) (key string, desc string) {
+	rows, err := m.db.Queryx("SELECT `key`, `desc` FROM `keys` WHERE id = ?", id)
+	defer rows.Close()
+
+	if err == nil && rows.Next() {
+		rows.Scan(&key, &desc)
+	}
+
+	return
+}
+
+func (m *Migrator) getBunchByID(id int64) (name string, desc string, active bool) {
+	rows, err := m.db.Queryx("SELECT `name`, `desc`, `active` FROM bunch WHERE id = ?", id)
+	defer rows.Close()
+
+	if err == nil && rows.Next() {
+		rows.Scan(&name, &desc, &active)
+	}
+
+	return
+}
+
+func (m *Migrator) getUserByID(id int64) (username string, email string, active bool) {
+	rows, err := m.db.Queryx("Select `username`, `email`, `active` FROM `users` WHERE id = ?", id)
+	defer rows.Close()
+
+	if err == nil && rows.Next() {
+		rows.Scan(&username, &email, &active)
+	}
+
+	return
 }

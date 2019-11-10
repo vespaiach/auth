@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/vespaiach/auth/pkg/adding"
+	"github.com/vespaiach/auth/pkg/modifying"
+	"strings"
+	"time"
 )
 
 var sqlCreateBunch = "INSERT INTO `bunch` (`name`, `desc`) VALUES (?, ?);"
@@ -67,4 +70,39 @@ func (st *Storage) GetBunchNameByID(id int64) (string, error) {
 	}
 
 	return name, nil
+}
+
+var sqlUpdateBunch = "UPDATE bunch SET %s WHERE bunch.id = :id;"
+
+func (st *Storage) ModifyBunch(b modifying.Bunch) error {
+	fields := make([]string, 0)
+	updating := make(map[string]interface{})
+
+	if len(b.Name) > 0 {
+		fields = append(fields, "`name`=:name")
+		updating["name"] = b.Name
+	}
+
+	if len(b.Desc) > 0 {
+		fields = append(fields, "`desc`=:desc")
+		updating["desc"] = b.Desc
+	}
+
+	if b.Active.Valid {
+		fields = append(fields, "`active`=:active")
+		updating["active"] = b.Active.Bool
+	}
+
+	if len(fields) > 0 {
+		fields = append(fields, "`updated_at`=:updated_at")
+		updating["updated_at"] = time.Now()
+		updating["id"] = b.ID
+
+		_, err := st.DbClient.NamedExec(fmt.Sprintf(sqlUpdateBunch, strings.Join(fields, ",")), updating)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
