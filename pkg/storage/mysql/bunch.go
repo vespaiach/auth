@@ -1,6 +1,10 @@
 package mysql
 
-import "github.com/vespaiach/auth/pkg/adding"
+import (
+	"errors"
+	"fmt"
+	"github.com/vespaiach/auth/pkg/adding"
+)
 
 var sqlCreateBunch = "INSERT INTO `bunch` (`name`, `desc`) VALUES (?, ?);"
 
@@ -42,4 +46,25 @@ func (st *Storage) IsDuplicatedBunch(name string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+var sqlGetBunchName = `SELECT name FROM bunch WHERE id = ?;`
+
+func (st *Storage) GetBunchNameByID(id int64) (string, error) {
+	rows, err := st.DbClient.Queryx(sqlGetBunchName, id)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", errors.New(fmt.Sprintf("no bunch found with id = %d", id))
+	}
+
+	var name string
+	if err := rows.Scan(&name); err != nil {
+		return "", err
+	}
+
+	return name, nil
 }

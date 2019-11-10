@@ -1,6 +1,10 @@
 package mysql
 
-import "github.com/vespaiach/auth/pkg/adding"
+import (
+	"errors"
+	"fmt"
+	"github.com/vespaiach/auth/pkg/adding"
+)
 
 var sqlCreateKey = "INSERT INTO `keys` (`key`, `desc`) VALUES (?, ?);"
 
@@ -42,4 +46,25 @@ func (st *Storage) IsDuplicatedKey(key string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+var sqlGetKeyName = "SELECT `key` FROM `keys` WHERE id = ?;"
+
+func (st *Storage) GetKeyByID(id int64) (string, error) {
+	rows, err := st.DbClient.Queryx(sqlGetKeyName, id)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", errors.New(fmt.Sprintf("no key found with id = %d", id))
+	}
+
+	var key string
+	if err := rows.Scan(&key); err != nil {
+		return "", err
+	}
+
+	return key, nil
 }

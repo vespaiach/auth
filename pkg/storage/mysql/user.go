@@ -1,6 +1,10 @@
 package mysql
 
-import "github.com/vespaiach/auth/pkg/adding"
+import (
+	"errors"
+	"fmt"
+	"github.com/vespaiach/auth/pkg/adding"
+)
 
 var sqlCreateUser = `INSERT INTO users(username, email, hash) VALUES(?, ?, ?);`
 
@@ -63,4 +67,25 @@ func (st *Storage) IsDuplicatedEmail(email string) (bool, error) {
 	}
 
 	return count > 0, nil
+}
+
+var sqlGetUsernameAndEmail = "SELECT `username`, email FROM `users` WHERE id = ?;"
+
+func (st *Storage) GetUsernameAndEmail(id int64) (string, string, error) {
+	rows, err := st.DbClient.Queryx(sqlGetUsernameAndEmail, id)
+	if err != nil {
+		return "", "", err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "", "", errors.New(fmt.Sprintf("no user found with id = %d", id))
+	}
+
+	var username, email string
+	if err := rows.Scan(&username, &email); err != nil {
+		return "", "", err
+	}
+
+	return username, email, nil
 }
