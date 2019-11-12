@@ -6,6 +6,7 @@ const (
 	ErrGetData ErrCode = iota
 	ErrExecData
 	ErrDataNotFound
+	ErrDataFailValidation
 )
 
 type AppErr struct {

@@ -3,11 +3,13 @@ package ep
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/vespaiach/auth/pkg/common"
 	"github.com/vespaiach/auth/pkg/listing"
-	"time"
 )
 
+// User response model
 type User struct {
 	ID        int64     `json:"id"`
 	Username  string    `json:"username"`
@@ -17,6 +19,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// GetUser endpoint
 func GetUser(ctx context.Context, request interface{}) (interface{}, error) {
 	service := ctx.Value(common.ListingServiceContextKey).(listing.Service)
 

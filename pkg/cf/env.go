@@ -1,6 +1,5 @@
 package cf
 
-
 import (
 	"fmt"
 	"log"
@@ -19,8 +18,8 @@ var (
 	defaultDbuser               = "root"
 	defaultDbpass               = "password"
 	defaultDboption             = "charset=utf8&parseTime=True&loc=Local&multiStatements=True&maxAllowedPacket=0"
-	defaultAccessTokenDuration  = 120   // minutes
-	defaultRefreshTokenDuration = 0  // minutes
+	defaultAccessTokenDuration  = "120m" // minutes
+	defaultRefreshTokenDuration = "0m"   // minutes
 )
 
 // AppConfig holds all app's settings and will be read from env
@@ -36,8 +35,8 @@ type AppConfig struct {
 	DbUser               string
 	DbPass               string
 	DbOption             string
-	AccessTokenDuration  int
-	RefreshTokenDuration int
+	AccessTokenDuration  string
+	RefreshTokenDuration string
 }
 
 // BuildMysqlDSN returns mysqldsn
@@ -113,13 +112,13 @@ func LoadAppConfig() *AppConfig {
 		DbOption = defaultDboption
 	}
 
-	AccessTokenDuration, err := getEnvInt("ACCESS_TOKEN_DURATION")
+	AccessTokenDuration, err := getEnvString("ACCESS_TOKEN_DURATION")
 	if err != nil {
 		log.Println(err)
 		AccessTokenDuration = defaultAccessTokenDuration
 	}
 
-	RefreshTokenDuration, err := getEnvInt("REFRESH_TOKEN_DURATION")
+	RefreshTokenDuration, err := getEnvString("REFRESH_TOKEN_DURATION")
 	if err != nil {
 		log.Println(err)
 		RefreshTokenDuration = defaultRefreshTokenDuration
@@ -141,4 +140,3 @@ func LoadAppConfig() *AppConfig {
 		RefreshTokenDuration,
 	}
 }
-

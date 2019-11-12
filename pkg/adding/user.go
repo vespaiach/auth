@@ -7,9 +7,9 @@ import (
 
 // User model
 type User struct {
-	Username string `json:"username" db:"username"`
-	Email    string `json:"email" db:"email"`
-	Hash     string `json:"hash" db:"hash"`
+	Username string
+	Email    string
+	Hash     string
 }
 
 var ErrUsernameRequired = errors.New("username is missing")
@@ -18,10 +18,9 @@ var ErrUsernameInvalid = errors.New("username contains special characters or whi
 var ErrEmailRequired = errors.New("email address is missing")
 var ErrEmailTooLong = errors.New("email address exceeds 64 characters")
 var ErrEmailInvalid = errors.New("email address is invalid")
-var ErrDuplicatedUsername = errors.New("username is duplicated")
-var ErrDuplicatedEmail = errors.New("email address is duplicated")
-var ErrPasswordHashedRequired = errors.New("password hash is missing")
+var ErrHashRequired = errors.New("password hash is missing")
 
+// Validate user data before adding
 func (u *User) Validate() error {
 	if len(u.Username) == 0 {
 		return ErrUsernameRequired
@@ -31,7 +30,7 @@ func (u *User) Validate() error {
 		return ErrUsernameTooLong
 	}
 
-	if matched, err := regexp.Match(`^[a-z0-9_]{%d,%d}$`, []byte(u.Username)); !matched || err != nil {
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_]{1,32}$`, []byte(u.Username)); !matched || err != nil {
 		return ErrUsernameInvalid
 	}
 
@@ -43,12 +42,12 @@ func (u *User) Validate() error {
 		return ErrEmailTooLong
 	}
 
-	if matched, err := regexp.Match(`"^[a-z0-9_@\\-\\.]{1,127}$"`, []byte(u.Email)); !matched || err != nil {
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_@\\-\\.]{1,127}$`, []byte(u.Email)); !matched || err != nil {
 		return ErrEmailInvalid
 	}
 
 	if len(u.Hash) == 0 {
-		return ErrPasswordHashedRequired
+		return ErrHashRequired
 	}
 
 	return nil

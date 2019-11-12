@@ -3,10 +3,11 @@ package tp
 import (
 	"context"
 	"encoding/json"
-	kith "github.com/go-kit/kit/transport/http"
-	"github.com/vespaiach/auth/pkg/common"
 	"net/http"
 	"time"
+
+	kith "github.com/go-kit/kit/transport/http"
+	"github.com/vespaiach/auth/pkg/common"
 )
 
 type response struct {
