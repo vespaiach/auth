@@ -1,24 +1,33 @@
 package adding
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/vespaiach/auth/pkg/common"
+)
 
 // Bunch model
 type Bunch struct {
-	Name string `json:"name" db:"name"`
-	Desc string `json:"desc" db:"desc"`
+	Name string
+	Desc string
 }
 
-var ErrBunchNameInvalid = errors.New("bunch name must be from 1 to 32 characters")
-var ErrDuplicatedBunch = errors.New("bunch name is duplicated")
-var ErrBunchDescTooLong = errors.New("bunch description must be less than 64 characters")
-
 func (b *Bunch) Validate() error {
+	payload := make([]string, 0, 7)
+	valid := true
+
 	if len(b.Name) == 0 || len(b.Name) > 32 {
-		return ErrBunchNameInvalid
+		valid = false
+		payload = append(payload, "bunch name must be from 1 to 32 characters")
 	}
 
 	if len(b.Desc) > 64 {
-		return ErrBunchDescTooLong
+		valid = false
+		payload = append(payload, "bunch description must be less than 64 characters")
+	}
+
+	if !valid {
+		return common.NewAppErr(errors.New("bunch data is not valid"), common.ErrDataFailValidation)
 	}
 
 	return nil

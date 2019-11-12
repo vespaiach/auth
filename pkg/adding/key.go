@@ -1,25 +1,33 @@
 package adding
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/vespaiach/auth/pkg/common"
+)
 
 // ServiceKey model
 type ServiceKey struct {
-	Key string `json:"key" db:"key"`
-	Desc string `json:"desc" db:"desc"`
+	Key  string
+	Desc string
 }
 
-var ErrKeyNameInvalid = errors.New("key name must be from 1 to 32 characters")
-var ErrDuplicatedKey = errors.New("key name is duplicated")
-var ErrKeyDescTooLong = errors.New("key description must be less than 64 characters")
-
-
 func (sk *ServiceKey) Validate() error {
+	payload := make([]string, 0, 2)
+	valid := true
+
 	if len(sk.Key) == 0 || len(sk.Key) > 32 {
-		return ErrKeyNameInvalid
+		valid = false
+		payload = append(payload, "key name must be from 1 to 32 characters")
 	}
 
 	if len(sk.Desc) > 64 {
-		return ErrKeyDescTooLong
+		valid = false
+		payload = append(payload, "key description must be less than 64 characters")
+	}
+
+	if !valid {
+		return common.NewAppErr(errors.New("key data is not valid"), common.ErrDataFailValidation)
 	}
 
 	return nil

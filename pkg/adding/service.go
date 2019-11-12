@@ -1,5 +1,11 @@
 package adding
 
+import (
+	"errors"
+
+	"github.com/vespaiach/auth/pkg/common"
+)
+
 // Repository defines storage's functions
 type Repository interface {
 	AddServiceKey(key ServiceKey) (int64, error)
@@ -32,7 +38,7 @@ func (s *service) AddServiceKey(sk ServiceKey) (int64, error) {
 	}
 
 	if s.repo.IsDuplicatedKey(sk.Key) {
-		return 0, ErrDuplicatedKey
+		return 0, common.NewAppErr(errors.New("key is duplicated"), common.ErrDataFailValidation)
 	}
 
 	return s.repo.AddServiceKey(sk)
@@ -44,7 +50,7 @@ func (s *service) AddBunch(b Bunch) (int64, error) {
 	}
 
 	if s.repo.IsDuplicatedBunch(b.Name) {
-		return 0, ErrDuplicatedBunch
+		return 0, common.NewAppErr(errors.New("bunch is duplicated"), common.ErrDataFailValidation)
 	}
 
 	return s.repo.AddBunch(b)
@@ -56,11 +62,11 @@ func (s *service) AddUser(u User) (int64, error) {
 	}
 
 	if s.repo.IsDuplicatedUsername(u.Username) {
-		return 0, ErrDuplicatedUsername
+		return 0, common.NewAppErr(errors.New("username is duplicated"), common.ErrDataFailValidation)
 	}
 
 	if s.repo.IsDuplicatedUsername(u.Email) {
-		return 0, ErrDuplicatedEmail
+		return 0, common.NewAppErr(errors.New("email address is duplicated"), common.ErrDataFailValidation)
 	}
 
 	return s.repo.AddUser(u)
