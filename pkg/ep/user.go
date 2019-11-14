@@ -11,11 +11,20 @@ import (
 	"github.com/vespaiach/auth/pkg/cf"
 	"github.com/vespaiach/auth/pkg/common"
 	"github.com/vespaiach/auth/pkg/listing"
+	"github.com/vespaiach/auth/pkg/modifying"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // AddingUser model for adding a user
 type AddingUser struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// UpdatingUser model for updatina user
+type UpdatingUser struct {
+	ID       int64  `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -30,6 +39,30 @@ type tokenClaims struct {
 	Bunches []string
 	Keys    []string
 	jwtgo.StandardClaims
+}
+
+func (u *UpdatingUser) Validate() error {
+	payload := make(map[string]string)
+
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_]{1,32}$`, []byte(u.Username)); !matched || err != nil {
+		payload["username"] = "username is not valid"
+	}
+
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_@\\-\\.]{1,127}$`, []byte(u.Email)); !matched || err != nil {
+		payload["email"] = "email is not valid"
+	}
+
+	if len(u.Password) == 0 {
+		payload["password"] = "password is required"
+	}
+
+	if len(payload) > 0 {
+		err := common.NewAppErr(errors.New("data is not valid"), common.ErrDataFailValidation)
+		err.Payload = payload
+		return err
+	}
+
+	return nil
 }
 
 func (u *AddingUser) Validate() error {
@@ -167,4 +200,18 @@ func VerifyUser(ctx context.Context, request interface{}) (interface{}, error) {
 	default:
 		return &Token{tokenString}, nil
 	}
+}
+
+func UpdateUser(ctx context.Context, request interface{}) (interface{}, error) {
+	listingServ := ctx.Value(common.ListingServiceContextKey).(listing.Service)
+	modifyServ := ctx.Value(common.ModifyServiceContextKey).(modifying.Service)
+	appConfig := ctx.Value(common.AppConfigContextKey).(*cf.AppConfig)
+
+	updating, ok := request.(UpdatingUser)
+	if !ok {
+		return nil, errors.New("couldn't get updating data")
+	}
+
+	modifyServ.ModifyUser
+
 }

@@ -6,5 +6,6 @@ type ContextKey int
 const (
 	ListingServiceContextKey ContextKey = iota
 	AddingServiceContextKey
+	ModifyServiceContextKey
 	AppConfigContextKey
 )

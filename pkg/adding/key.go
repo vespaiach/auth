@@ -15,7 +15,7 @@ var ErrKeyInvalid = errors.New("key name must be from 1 to 32 characters")
 var ErrKeyDescTooLong = errors.New("key description must be less than 64 characters")
 
 func (sk *ServiceKey) Validate() error {
-	if matched, err := regexp.Match(`^[a-z0-9_]{1,32}$`, []byte(sk.Key)); !matched || err != nil {
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_]{1,32}$`, []byte(sk.Key)); !matched || err != nil {
 		return ErrKeyInvalid
 	}
 
