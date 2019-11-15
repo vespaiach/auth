@@ -8,8 +8,13 @@ import (
 type Repository interface {
 	GetUserByID(id int64) (*User, error)
 	GetUserByUsername(username string) (*User, error)
-	GetBunchByUserID(id int64) ([]*Bunch, error)
-	GetKeysByUserID(id int64) ([]*Key, error)
+	GetUserByEmail(email string) (*User, error)
+
+	GetBunchByID(id int64) (*Bunch, error)
+	GetBunchByName(name string) (*Bunch, error)
+
+	GetKeyByID(id int64) (*Key, error)
+	GetKeyByName(key string) (*Key, error)
 }
 
 type Service interface {

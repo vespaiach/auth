@@ -1,32 +1,26 @@
-package modifying
+package adding
 
 import (
 	"errors"
+	"regexp"
 )
 
 // ServiceKey model
 type ServiceKey struct {
-	ID   int64
 	Key  string
 	Desc string
 }
 
-var ErrServiceKeyIDMissing = errors.New("key id is missing")
-var ErrServiceKeyTooLong = errors.New("key name is too long")
-var ErrServiceKeyDescTooLong = errors.New("key desc is too long")
-var ErrDuplicatedKey = errors.New("key name is duplicated")
+var ErrKeyInvalid = errors.New("key name must be from 1 to 32 characters")
+var ErrKeyDescTooLong = errors.New("key description must be less than 64 characters")
 
 func (sk *ServiceKey) Validate() error {
-	if sk.ID == 0 {
-		return ErrServiceKeyIDMissing
-	}
-
-	if len(sk.Key) > 32 {
-		return ErrServiceKeyTooLong
+	if matched, err := regexp.Match(`^[a-zA-Z0-9_]{1,32}$`, []byte(sk.Key)); !matched || err != nil {
+		return ErrKeyInvalid
 	}
 
 	if len(sk.Desc) > 64 {
-		return ErrServiceKeyDescTooLong
+		return ErrKeyDescTooLong
 	}
 
 	return nil

@@ -3,11 +3,11 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"github.com/vespaiach/auth/pkg/adding"
-	"github.com/vespaiach/auth/pkg/listing"
-	"github.com/vespaiach/auth/pkg/modifying"
 	"strings"
 	"time"
+
+	"github.com/vespaiach/auth/pkg/adding"
+	"github.com/vespaiach/auth/pkg/modifying"
 )
 
 var sqlCreateUser = `INSERT INTO users(username, email, hash) VALUES(?, ?, ?);`
@@ -127,27 +127,4 @@ func (st *Storage) ModifyUser(u modifying.User) error {
 	}
 
 	return nil
-}
-
-var sqlGetUser = "SELECT `id`, `username`, `email`, active, created_at, updated_at FROM `users` " +
-	"WHERE id = ? LIMIT 1;"
-
-func (st *Storage) GetUserByID(id int64) (*listing.User, error) {
-	rows, err := st.DbClient.Queryx(sqlGetUser, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, nil
-	}
-
-	u := new(listing.User)
-	err = rows.Scan(&u.ID, &u.Username, &u.Email, &u.Active, &u.CreatedAt, &u.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-
-	return u, nil
 }

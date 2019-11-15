@@ -1,25 +1,26 @@
-package modifying
+package adding
 
-// Repository defines modifying's functions
+import (
+	"errors"
+
+	"github.com/vespaiach/auth/pkg/common"
+)
+
+// Repository defines storage's functions
 type Repository interface {
-	ModifyServiceKey(key ServiceKey) error
-	GetKeyByID(id int64) (string, error)
-	IsDuplicatedKey(key string) bool
-	ModifyBunch(b Bunch) error
-	GetBunchNameByID(id int64) (string, error)
-	IsDuplicatedBunch(name string) bool
-	ModifyUser(u User) error
-	// GetUser gets user's username and user's email buy user's id
-	GetUsernameAndEmail(id int64) (string, string, error)
-	IsDuplicatedUsername(name string) bool
-	IsDuplicatedEmail(email string) bool
+	AddKey(name string, desc string) (int64, error)
+	AddBunch(name string, desc string) (int64, error)
+	AddUser(name string, email string, hash string) (int64, error)
 }
 
-// Service provides modifying operations.
+// Service provides key, bunch, user adding/updating operations
 type Service interface {
-	ModifyServiceKey(sk ServiceKey) error
-	ModifyBunch(b Bunch) error
-	ModifyUser(u User) error
+	AddKey(name string, desc string) (int64, error)
+	AddBunch(name string, desc string) (int64, error)
+	AddUser(name string, email string, hash string) (int64, error)
+	UpdateKey(id int64, name string, desc string) (bool, error)
+	UpdateBunch(id int64, name string, desc string) (bool, error)
+	UpdateUser(id int64, name string, email string, hash string) (bool, error)
 }
 
 type service struct {
@@ -30,57 +31,58 @@ func NewService(repo Repository) Service {
 	return &service{repo}
 }
 
-func (s *service) ModifyServiceKey(sk ServiceKey) error {
+func (s *service) AddServiceKey(sk ServiceKey) (int64, error) {
 	if err := sk.Validate(); err != nil {
-		return err
+		return 0, err
 	}
 
-	key, err := s.repo.GetKeyByID(sk.ID)
+	dupKey, err := s.repo.IsDuplicatedKey(sk.Key)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	if dupKey {
+		return 0, common.NewAppErr(errors.New("key is duplicated"), common.ErrDataFailValidation)
 	}
 
-	if sk.Key != key && s.repo.IsDuplicatedKey(sk.Key) {
-		return ErrDuplicatedKey
-	}
-
-	return s.repo.ModifyServiceKey(sk)
+	return s.repo.AddServiceKey(sk)
 }
 
-func (s *service) ModifyBunch(b Bunch) error {
+func (s *service) AddBunch(b Bunch) (int64, error) {
 	if err := b.Validate(); err != nil {
-		return err
+		return 0, err
 	}
 
-	name, err := s.repo.GetBunchNameByID(b.ID)
+	ok, err := s.repo.IsDuplicatedBunch(b.Name)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	if ok {
+		return 0, common.NewAppErr(errors.New("bunch is duplicated"), common.ErrDataFailValidation)
 	}
 
-	if name != b.Name && s.repo.IsDuplicatedBunch(b.Name) {
-		return ErrDuplicatedBunch
-	}
-
-	return s.repo.ModifyBunch(b)
+	return s.repo.AddBunch(b)
 }
 
-func (s *service) ModifyUser(u User) error {
+func (s *service) AddUser(u User) (int64, error) {
 	if err := u.Validate(); err != nil {
-		return err
+		return 0, err
 	}
 
-	username, email, err := s.repo.GetUsernameAndEmail(u.ID)
+	dupName, err := s.repo.IsDuplicatedUsername(u.Username)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	if dupName {
+		return 0, common.NewAppErr(errors.New("username is duplicated"), common.ErrDataFailValidation)
 	}
 
-	if u.Username != username && s.repo.IsDuplicatedUsername(u.Username) {
-		return ErrDuplicatedUsername
+	dupEmail, err := s.repo.IsDuplicatedUsername(u.Email)
+	if err != nil {
+		return 0, err
+	}
+	if dupEmail {
+		return 0, common.NewAppErr(errors.New("email address is duplicated"), common.ErrDataFailValidation)
 	}
 
-	if u.Email != email && s.repo.IsDuplicatedUsername(u.Email) {
-		return ErrDuplicatedEmail
-	}
-
-	return s.repo.ModifyUser(u)
+	return s.repo.AddUser(u)
 }
