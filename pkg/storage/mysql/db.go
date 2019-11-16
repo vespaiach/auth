@@ -279,3 +279,18 @@ func (m *Migrator) getUserByID(id int64) (username string, email string, active 
 
 	return
 }
+
+func (m *Migrator) getKeyIDByBunchID(id int64) []int64 {
+	rows, _ := m.db.Queryx("SELECT key_id FROM `bunch_keys` WHERE bunch_id = ?", id)
+	defer rows.Close()
+
+	results := make([]int64, 0)
+
+	for rows.Next() {
+		var id int64
+		rows.Scan(&id)
+		results = append(results, id)
+	}
+
+	return results
+}

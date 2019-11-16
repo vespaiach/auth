@@ -5,7 +5,6 @@ type ContextKey int
 
 const (
 	KeyManagementService ContextKey = iota
-	AddingServiceContextKey
-	ModifyServiceContextKey
+	BunchManagementService
 	AppConfigContextKey
 )

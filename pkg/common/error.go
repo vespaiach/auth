@@ -17,4 +17,6 @@ var (
 	ErrKeyNotFound        = errors.New("key doesn't exist")
 	ErrBunchNotFound      = errors.New("bunch doesn't exist")
 	ErrWrongInputDatatype = errors.New("inputted data type is incorrect")
+	ErrDuplicatedBunch    = errors.New("duplicated bunch")
+	ErrBunchNameInvalid   = errors.New("bunch name is invalid")
 )

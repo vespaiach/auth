@@ -12,7 +12,8 @@ import (
 
 type testApp struct {
 	mig *Migrator
-	kst  *KeyStorage
+	kst *KeyStorage
+	bst *BunchStorage
 }
 
 var test *testApp
@@ -26,7 +27,8 @@ func TestMain(m *testing.M) {
 
 	test = &testApp{
 		mig: NewMigrator(db),
-		kst:  NewKeyStorage(db),
+		kst: NewKeyStorage(db),
+		bst: NewBunchStorage(db),
 	}
 
 	test.mig.Drop()
