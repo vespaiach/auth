@@ -48,8 +48,14 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case common.ErrWrongInputDatatype:
 		result.fail(http.StatusInternalServerError, err)
 		break
-	case common.ErrBunchNotFound, common.ErrDuplicatedKey, common.ErrKeyNameInvalid, common.ErrKeyNotFound:
+	case common.ErrDuplicatedUsername, common.ErrEmailInvalid, common.ErrDuplicatedEmail,
+		common.ErrUsernameInvalid, common.ErrDuplicatedBunch, common.ErrBunchNameInvalid,
+		common.ErrKeyNameInvalid, common.ErrMissingHash, common.ErrDuplicatedKey,
+		common.ErrPasswordMissing:
 		result.fail(http.StatusBadRequest, err)
+		break
+	case common.ErrKeyNotFound, common.ErrUserNotFound, common.ErrBunchNotFound:
+		result.fail(http.StatusNotFound, err)
 		break
 	default:
 		result.fail(http.StatusInternalServerError, err)

@@ -2,15 +2,6 @@ package common
 
 import "errors"
 
-type ErrCode int
-
-const (
-	ErrGetData ErrCode = iota
-	ErrExecData
-	ErrDataNotFound
-	ErrDataFailValidation
-)
-
 var (
 	ErrDuplicatedKey      = errors.New("duplicated key")
 	ErrKeyNameInvalid     = errors.New("key name is invalid")
@@ -19,4 +10,11 @@ var (
 	ErrWrongInputDatatype = errors.New("inputted data type is incorrect")
 	ErrDuplicatedBunch    = errors.New("duplicated bunch")
 	ErrBunchNameInvalid   = errors.New("bunch name is invalid")
+	ErrUsernameInvalid    = errors.New("username is invalid")
+	ErrDuplicatedUsername = errors.New("duplicated username")
+	ErrEmailInvalid       = errors.New("email is invalid")
+	ErrDuplicatedEmail    = errors.New("duplicated email")
+	ErrMissingHash        = errors.New("hash is missing")
+	ErrUserNotFound       = errors.New("user doesn't exist")
+	ErrPasswordMissing    = errors.New("password is missing")
 )

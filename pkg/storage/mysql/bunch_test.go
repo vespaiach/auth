@@ -163,16 +163,19 @@ func TestBunchStorage_GetKeyInBunch(t *testing.T) {
 	t.Run("success_get_keys_in_a_bunch", func(t *testing.T) {
 		t.Parallel()
 
+		name := test.mig.createUniqueString("bunch")
 		kid1 := test.mig.createSeedingServiceKey(nil)
 		kid2 := test.mig.createSeedingServiceKey(nil)
 		kid3 := test.mig.createSeedingServiceKey(nil)
 		kid4 := test.mig.createSeedingServiceKey(nil)
-		bid := test.mig.createSeedingBunch(nil)
+		bid := test.mig.createSeedingBunch(func(field map[string]interface{}) {
+			field["name"] = name
+		})
 
 		err := test.bst.AddKeysToBunch(bid, []int64{kid1, kid2, kid3, kid4})
 		require.Nil(t, err)
 
-		keys, err := test.bst.GetKeyInBunch(bid)
+		keys, err := test.bst.GetKeysInBunch(name)
 		require.Nil(t, err)
 		require.NotNil(t, keys)
 		require.Len(t, keys, 4)

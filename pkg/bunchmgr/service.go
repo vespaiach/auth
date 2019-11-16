@@ -16,7 +16,7 @@ type Storer interface {
 		direction common.SortingDirection) ([]*Bunch, int64, error)
 	GetKeyIDs(keys []string) ([]int64, error)
 	AddKeysToBunch(bunchID int64, keyIDs []int64) error
-	GetKeyInBunch(name string) ([]*Key, error)
+	GetKeysInBunch(name string) ([]*Key, error)
 }
 
 type Service interface {
@@ -24,7 +24,7 @@ type Service interface {
 	ModifyBunch(id int64, name string, desc string, active sql.NullBool) error
 	GetBunchByName(name string) (*Bunch, error)
 	GetBunch(id int64) (*Bunch, error)
-	GetKeyInBunch(name string) ([]*Key, error)
+	GetKeysInBunch(name string) ([]*Key, error)
 	QueryBunches(page int64, perPage int64, name string, active sql.NullBool, order string) ([]*Bunch, int64, error)
 	AddKeysToBunch(bunch string, keys []string) error
 }
@@ -152,8 +152,8 @@ func (s *service) AddKeysToBunch(bunchName string, keys []string) error {
 	return nil
 }
 
-func (s *service) GetKeyInBunch(name string) ([]*Key, error) {
-	return s.st.GetKeyInBunch(name)
+func (s *service) GetKeysInBunch(name string) ([]*Key, error) {
+	return s.st.GetKeysInBunch(name)
 }
 
 func (s *service) isDuplicatedKey(name string) (bool, error) {

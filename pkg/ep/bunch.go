@@ -279,7 +279,7 @@ func GettingKeysInBunchEndPoint(ctx context.Context, request interface{}) (inter
 			return
 		}
 
-		keys, err := bserv.GetKeyInBunch(name)
+		keys, err := bserv.GetKeysInBunch(name)
 		if err != nil {
 			erch <- err
 			return

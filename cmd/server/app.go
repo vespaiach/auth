@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vespaiach/auth/pkg/bunchmgr"
 	"github.com/vespaiach/auth/pkg/keymgr"
+	"github.com/vespaiach/auth/pkg/usrmgr"
 	"log"
 	"net/http"
 
@@ -24,10 +25,12 @@ func main() {
 
 	keyserv := keymgr.NewService(mysql.NewKeyStorage(db))
 	bunchserv := bunchmgr.NewService(mysql.NewBunchStorage(db))
+	userserv := usrmgr.NewService(mysql.NewUserStorage(db))
 
 	mux := mux.NewRouter()
 	tp.MakeKeyHandlers(mux, appConfig, keyserv)
 	tp.MakeBunchHandlers(mux, appConfig, bunchserv)
+	tp.MakeUserHandlers(mux, appConfig, userserv)
 	http.Handle("/", mux)
 
 	fmt.Println("http address ", appConfig.ServerAddress, " msg listening")

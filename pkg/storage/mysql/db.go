@@ -234,14 +234,15 @@ func (m *Migrator) createSeedingUser(beforeCreate func(map[string]interface{})) 
 		"username": fmt.Sprintf("username_%s", strconv.Itoa(inc.New())),
 		"email":    fmt.Sprintf("email_%s", strconv.Itoa(inc.New())),
 		"hash":     fmt.Sprintf("hash_%s", strconv.Itoa(inc.New())),
+		"active":   true,
 	}
 
 	if beforeCreate != nil {
 		beforeCreate(fields)
 	}
 
-	result, _ := m.db.NamedExec("INSERT INTO users(username, email, hash) VALUES(:username, :email, :hash);",
-		fields)
+	result, _ := m.db.NamedExec("INSERT INTO users(username, email, hash, active) "+
+		"VALUES(:username, :email, :hash, :active);", fields)
 	id, _ := result.LastInsertId()
 
 	return id
@@ -269,12 +270,12 @@ func (m *Migrator) getBunchByID(id int64) (name string, desc string, active bool
 	return
 }
 
-func (m *Migrator) getUserByID(id int64) (username string, email string, active bool) {
-	rows, err := m.db.Queryx("Select `username`, `email`, `active` FROM `users` WHERE id = ?", id)
+func (m *Migrator) getUserByID(id int64) (username string, email string, hash string, active bool) {
+	rows, err := m.db.Queryx("Select `username`, `email`, `hash`, `active` FROM `users` WHERE id = ?", id)
 	defer rows.Close()
 
 	if err == nil && rows.Next() {
-		rows.Scan(&username, &email, &active)
+		rows.Scan(&username, &email, &hash, &active)
 	}
 
 	return

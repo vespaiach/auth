@@ -254,7 +254,7 @@ var sqlGetKeyInBunch = "SELECT `keys`.id, `keys`.`key`, `keys`.`desc`, `keys`.cr
 	"INNER JOIN `bunches` ON `bunches`.id = bunch_keys.bunch_id " +
 	"WHERE bunches.name = ?"
 
-func (st *BunchStorage) GetKeyInBunch(name string) ([]*bunchmgr.Key, error) {
+func (st *BunchStorage) GetKeysInBunch(name string) ([]*bunchmgr.Key, error) {
 	rows, err := st.db.Queryx(sqlGetKeyInBunch, name)
 	if err != nil {
 		return nil, err

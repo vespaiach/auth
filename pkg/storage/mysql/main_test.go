@@ -14,6 +14,7 @@ type testApp struct {
 	mig *Migrator
 	kst *KeyStorage
 	bst *BunchStorage
+	ust *UserStorage
 }
 
 var test *testApp
@@ -29,6 +30,7 @@ func TestMain(m *testing.M) {
 		mig: NewMigrator(db),
 		kst: NewKeyStorage(db),
 		bst: NewBunchStorage(db),
+		ust: NewUserStorage(db),
 	}
 
 	test.mig.Drop()
