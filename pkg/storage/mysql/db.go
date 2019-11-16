@@ -21,7 +21,7 @@ ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
-CREATE TABLE IF NOT EXISTS "bunch" (
+CREATE TABLE IF NOT EXISTS "bunches" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   "name" VARCHAR(32) NOT NULL DEFAULT '',
   "desc" VARCHAR(64) NOT NULL DEFAULT '',
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS "token_histories" (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
-CREATE TABLE IF NOT EXISTS "bunch_key" (
+CREATE TABLE IF NOT EXISTS "bunch_keys" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   "bunch_id" BIGINT(20) UNSIGNED NOT NULL,
   "key_id" BIGINT(20) UNSIGNED NOT NULL,
@@ -81,14 +81,14 @@ CREATE TABLE IF NOT EXISTS "bunch_key" (
     ON UPDATE CASCADE,
   CONSTRAINT "role_id_on_bunch_key"
     FOREIGN KEY ("bunch_id")
-    REFERENCES "bunch" ("id")
+    REFERENCES "bunches" ("id")
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
-CREATE TABLE IF NOT EXISTS "user_bunch" (
+CREATE TABLE IF NOT EXISTS "user_bunches" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   "user_id" BIGINT(20) UNSIGNED NOT NULL,
   "bunch_id" BIGINT(20) UNSIGNED NOT NULL,
@@ -104,17 +104,17 @@ CREATE TABLE IF NOT EXISTS "user_bunch" (
     ON UPDATE CASCADE,
   CONSTRAINT "bunch_id_on_user_bunch"
     FOREIGN KEY ("bunch_id")
-    REFERENCES "bunch" ("id")
+    REFERENCES "bunches" ("id")
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 `
 
 var dropDatabase = `
-DROP TABLE IF EXISTS "user_bunch";
-DROP TABLE IF EXISTS "bunch_key";
+DROP TABLE IF EXISTS "user_bunches";
+DROP TABLE IF EXISTS "bunch_keys";
 DROP TABLE IF EXISTS "keys";
-DROP TABLE IF EXISTS "bunch";
+DROP TABLE IF EXISTS "bunches";
 DROP TABLE IF EXISTS "users";
 DROP TABLE IF EXISTS "token_histories";
 `
@@ -222,7 +222,7 @@ func (m *Migrator) createSeedingBunch(beforeCreate func(map[string]interface{}))
 		beforeCreate(fields)
 	}
 
-	result, _ := m.db.NamedExec("INSERT INTO `bunch` (`name`, `desc`, active) VALUES (:name, :desc, :active);",
+	result, _ := m.db.NamedExec("INSERT INTO `bunches` (`name`, `desc`, active) VALUES (:name, :desc, :active);",
 		fields)
 	id, _ := result.LastInsertId()
 
@@ -259,7 +259,7 @@ func (m *Migrator) getServiceKeyByID(id int64) (key string, desc string) {
 }
 
 func (m *Migrator) getBunchByID(id int64) (name string, desc string, active bool) {
-	rows, err := m.db.Queryx("SELECT `name`, `desc`, `active` FROM bunch WHERE id = ?", id)
+	rows, err := m.db.Queryx("SELECT `name`, `desc`, `active` FROM bunches WHERE id = ?", id)
 	defer rows.Close()
 
 	if err == nil && rows.Next() {

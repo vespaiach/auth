@@ -4,7 +4,7 @@ package common
 type ContextKey int
 
 const (
-	ListingServiceContextKey ContextKey = iota
+	KeyManagementService ContextKey = iota
 	AddingServiceContextKey
 	ModifyServiceContextKey
 	AppConfigContextKey

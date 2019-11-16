@@ -2,8 +2,6 @@ package mysql
 
 import (
 	"github.com/stretchr/testify/require"
-	"github.com/vespaiach/auth/pkg/adding"
-	"github.com/vespaiach/auth/pkg/modifying"
 	"testing"
 )
 
@@ -16,7 +14,7 @@ func TestStorage_AddServiceKey(t *testing.T) {
 		key := test.mig.createUniqueString("key")
 		desc := test.mig.createUniqueString("desc")
 
-		id, err := test.st.AddServiceKey(adding.ServiceKey{key, desc})
+		id, err := test.kst.AddKey(key, desc)
 		require.Nil(t, err)
 		require.NotZero(t, id)
 	})
@@ -33,7 +31,7 @@ func TestStorage_AddServiceKey(t *testing.T) {
 			fields["desc"] = desc1
 		})
 
-		dupID, errDup := test.st.AddServiceKey(adding.ServiceKey{key, desc2})
+		dupID, errDup := test.kst.AddKey(key, desc2)
 		require.NotNil(t, errDup)
 		require.Zero(t, dupID)
 	})
@@ -49,11 +47,7 @@ func TestStorage_ModifyServiceKey(t *testing.T) {
 		key := test.mig.createUniqueString("key")
 		desc := test.mig.createUniqueString("desc")
 
-		err := test.st.ModifyServiceKey(modifying.ServiceKey{
-			ID:   id,
-			Key:  key,
-			Desc: desc,
-		})
+		err := test.kst.ModifyKey(id, key, desc)
 		require.Nil(t, err)
 
 		updatedKey, updatedDesc := test.mig.getServiceKeyByID(id)

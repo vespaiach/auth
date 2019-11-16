@@ -1,0 +1,176 @@
+{
+	"info": {
+		"_postman_id": "cf3e3dd1-7cc5-4494-833b-0f44da1c3fa4",
+		"name": "Key Management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Key",
+			"item": [
+				{
+					"name": "Add a key",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/javascript",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"key\": \"key_to_success\",\n\t\"desc\": \"just for testing\"\n}",
+							"options": {
+								"raw": {
+									"language": "javascript"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Modify a key",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"key\": \"key_to_success_updated\",\n\t\"desc\": \"just for testing updated\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add a key to bunch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/javascript",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"bunch\": \"bunch_of_love\"\n}",
+							"options": {
+								"raw": {
+									"language": "javascript"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success_updated/bunch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success_updated",
+								"bunch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a key",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success_updated",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success_updated"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query keys",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys?page=1&per_page=2&name=key&sort=+key",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "2"
+								},
+								{
+									"key": "name",
+									"value": "key"
+								},
+								{
+									"key": "sort",
+									"value": "+key"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

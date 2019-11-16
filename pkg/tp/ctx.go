@@ -2,12 +2,15 @@ package tp
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/vespaiach/auth/pkg/common"
 	"net/http"
-	"time"
 
 	kith "github.com/go-kit/kit/transport/http"
-	"github.com/vespaiach/auth/pkg/common"
+)
+
+import (
+	"encoding/json"
+	"time"
 )
 
 type response struct {
@@ -35,38 +38,22 @@ func (res *response) success(statusCode int, data interface{}) {
 }
 
 func (res *response) fail(statusCode int, err error) {
-	appErr, ok := err.(*common.AppErr)
-	if ok && len(appErr.Payload) > 0 {
-		res.Error = appErr.Payload
-	} else {
-		res.Error = err.Error()
-	}
+	res.Error = err.Error()
 	res.response(statusCode)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	result := &response{writer: w}
-
-	switch err.(type) {
-	case *common.AppErr:
-		appErr := err.(*common.AppErr)
-
-		switch appErr.Code {
-		case common.ErrGetData:
-		case common.ErrExecData:
-			result.fail(http.StatusInternalServerError, appErr)
-			return
-		case common.ErrDataNotFound:
-			result.fail(http.StatusNotFound, appErr)
-			return
-		default:
-			result.fail(http.StatusBadRequest, appErr)
-			return
-		}
-
+	switch err {
+	case common.ErrWrongInputDatatype:
+		result.fail(http.StatusInternalServerError, err)
+		break
+	case common.ErrBunchNotFound, common.ErrDuplicatedKey, common.ErrKeyNameInvalid, common.ErrKeyNotFound:
+		result.fail(http.StatusBadRequest, err)
+		break
 	default:
-		result.response(http.StatusInternalServerError)
-		return
+		result.fail(http.StatusInternalServerError, err)
+		break
 	}
 }
 
@@ -79,7 +66,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, data interface{}) 
 	return nil
 }
 
-func addServiceToContext(s interface{}, key common.ContextKey) kith.RequestFunc {
+func addToContext(s interface{}, key common.ContextKey) kith.RequestFunc {
 	return func(ctx context.Context, _ *http.Request) context.Context {
 		return context.WithValue(ctx, key, s)
 	}

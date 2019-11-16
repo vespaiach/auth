@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/vespaiach/auth/pkg/keymgr"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/vespaiach/auth/pkg/adding"
 	"github.com/vespaiach/auth/pkg/cf"
-	"github.com/vespaiach/auth/pkg/listing"
 	"github.com/vespaiach/auth/pkg/storage/mysql"
 	"github.com/vespaiach/auth/pkg/tp"
 )
@@ -22,13 +21,11 @@ func main() {
 	}
 	defer db.Close()
 
-	repo := mysql.NewStorage(db)
-
-	lstServ := listing.NewService(repo)
-	addServ := adding.NewService(repo)
+	keyStorer := mysql.NewKeyStorage(db)
+	keyserv := keymgr.NewService(keyStorer)
 
 	mux := mux.NewRouter()
-	tp.MakeUserHandlers(mux, appConfig, lstServ, addServ)
+	tp.MakeKeyHandlers(mux, appConfig, keyserv)
 	http.Handle("/", mux)
 
 	fmt.Println("http address ", appConfig.ServerAddress, " msg listening")

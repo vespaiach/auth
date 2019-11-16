@@ -1,23 +1,36 @@
 package mysql
 
 import (
-	"errors"
 	"fmt"
-	"github.com/vespaiach/auth/pkg/adding"
-	"github.com/vespaiach/auth/pkg/modifying"
-	"strings"
+	"github.com/jmoiron/sqlx"
+	"github.com/vespaiach/auth/pkg/common"
+	"github.com/vespaiach/auth/pkg/keymgr"
+	"sync"
 	"time"
 )
 
-var sqlCreateKey = "INSERT INTO `keys` (`key`, `desc`) VALUES (?, ?);"
+// KeyStorage implements db's storage for key
+type KeyStorage struct {
+	db *sqlx.DB
+}
 
-func (st *Storage) AddServiceKey(sk adding.ServiceKey) (int64, error) {
-	stmt, err := st.DbClient.Prepare(sqlCreateKey)
+// NewKeyStorage create new instance of KeyStorage
+func NewKeyStorage(db *sqlx.DB) *KeyStorage {
+	return &KeyStorage{
+		db,
+	}
+}
+
+var sqlCreateKey = "INSERT INTO `keys` (`key`, `desc`, created_at, updated_at) VALUES (?, ?, ?, ?);"
+
+func (st *KeyStorage) AddKey(name string, desc string) (int64, error) {
+	stmt, err := st.db.Prepare(sqlCreateKey)
 	if err != nil {
 		return 0, err
 	}
 
-	res, err := stmt.Exec(sk.Key, sk.Desc)
+	now := time.Now()
+	res, err := stmt.Exec(name, desc, now, now)
 	if err != nil {
 		return 0, err
 	}
@@ -30,74 +43,200 @@ func (st *Storage) AddServiceKey(sk adding.ServiceKey) (int64, error) {
 	return lastID, nil
 }
 
-var sqlCheckKey = `SELECT count(id) FROM keys WHERE key = ?;`
+var sqlGetKeyByName = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` WHERE `key` = ? LIMIT 1;"
 
-func (st *Storage) IsDuplicatedKey(key string) (bool, error) {
-	rows, err := st.DbClient.Queryx(sqlCheckKey, key)
+func (st *KeyStorage) GetKeyByName(name string) (*keymgr.Key, error) {
+	rows, err := st.db.Queryx(sqlGetKeyByName, name)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return false, nil
+		return nil, nil
 	}
 
-	var count int
-	if err := rows.Scan(&count); err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
-}
-
-var sqlGetKeyName = "SELECT `key` FROM `keys` WHERE id = ?;"
-
-func (st *Storage) GetKeyByID(id int64) (string, error) {
-	rows, err := st.DbClient.Queryx(sqlGetKeyName, id)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return "", errors.New(fmt.Sprintf("no key found with id = %d", id))
-	}
-
-	var key string
-	if err := rows.Scan(&key); err != nil {
-		return "", err
+	key := new(keymgr.Key)
+	if err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt); err != nil {
+		return nil, err
 	}
 
 	return key, nil
 }
 
-var sqlUpdateKeys = "UPDATE `keys` SET %s WHERE `keys`.id = :id;"
+var sqlGetKeyByID = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` WHERE id = ? LIMIT 1;"
 
-func (st *Storage) ModifyServiceKey(sk modifying.ServiceKey) error {
-	fields := make([]string, 0)
-	updating := make(map[string]interface{})
+func (st *KeyStorage) GetKey(id int64) (*keymgr.Key, error) {
+	rows, err := st.db.Queryx(sqlGetKeyByID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	if len(sk.Key) > 0 {
-		fields = append(fields, "`key`=:key")
-		updating["key"] = sk.Key
+	if !rows.Next() {
+		return nil, nil
 	}
 
-	if len(sk.Desc) > 0 {
-		fields = append(fields, "`desc`=:desc")
-		updating["desc"] = sk.Desc
+	key := new(keymgr.Key)
+	if err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt); err != nil {
+		return nil, err
 	}
 
-	if len(fields) > 0 {
-		fields = append(fields, "`updated_at`=:updated_at")
-		updating["updated_at"] = time.Now()
-		updating["id"] = sk.ID
+	return key, nil
+}
 
-		_, err := st.DbClient.NamedExec(fmt.Sprintf(sqlUpdateKeys, strings.Join(fields, ",")), updating)
-		if err != nil {
-			return err
-		}
+var sqlGetBunchID = "SELECT id FROM `bunches` WHERE `name` = ? LIMIT 1;"
+
+func (st *KeyStorage) GetBunchID(name string) (int64, error) {
+	rows, err := st.db.Queryx(sqlGetBunchID, name)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return 0, nil
+	}
+
+	var id int64
+	if err := rows.Scan(&id); err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+var sqlUpdateKeys = "UPDATE `keys` SET `key` = :key, `desc` = :desc, updated_at = :updated_at WHERE `keys`.id = :id;"
+
+func (st *KeyStorage) ModifyKey(id int64, name string, desc string) error {
+	updating := map[string]interface{}{
+		"key":        name,
+		"desc":       desc,
+		"id":         id,
+		"updated_at": time.Now(),
+	}
+
+	_, err := st.db.NamedExec(sqlUpdateKeys, updating)
+	if err != nil {
+		return err
 	}
 
 	return nil
+}
+
+var sqlAddKeyToBunch = "INSERT INTO `bunch_keys` (bunch_id, key_id, created_at) VALUES (:bunch_id, :key_id, :created_at);"
+
+func (st *KeyStorage) AddKeyToBunch(keyID int64, bunchID int64) (int64, error) {
+	updating := map[string]interface{}{
+		"bunch_id":   bunchID,
+		"key_id":     keyID,
+		"created_at": time.Now(),
+	}
+
+	res, err := st.db.NamedExec(sqlAddKeyToBunch, updating)
+	if err != nil {
+		return 0, err
+	}
+
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastID, nil
+}
+
+var sqlQueryKeys = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` %s ORDER BY %s LIMIT :offset, :limit;"
+var sqlQueryKeysCounter = "SELECT count(id) FROM `keys` %s;"
+
+func (st *KeyStorage) QueryKeys(take int64, skip int64, name string, sortby string,
+	direction common.SortingDirection) ([]*keymgr.Key, int64, error) {
+
+	var (
+		order         string
+		where         string
+		sql           string
+		filter        map[string]interface{}
+		wg            sync.WaitGroup
+		queryErr      error
+		countTotalErr error
+		results       []*keymgr.Key
+		total         int64
+	)
+
+	filter = make(map[string]interface{})
+
+	if len(name) > 0 {
+		where = "WHERE `key` LIKE :name"
+		filter["name"] = "%" + name + "%"
+	}
+
+	if direction == common.Descending {
+		order = fmt.Sprintf("`%s` DESC, id", sortby)
+	} else {
+		order = fmt.Sprintf("`%s` ASC, id", sortby)
+	}
+
+	sql = fmt.Sprintf(sqlQueryKeys, where, order)
+
+	filter["offset"] = skip
+	filter["limit"] = take
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rows, err := st.db.NamedQuery(sql, filter)
+		if err != nil {
+			queryErr = err
+			return
+		}
+		defer rows.Close()
+
+		results = make([]*keymgr.Key, 0, take)
+		for rows.Next() {
+			key := new(keymgr.Key)
+			err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt)
+			if err != nil {
+				queryErr = err
+				return
+			}
+			results = append(results, key)
+		}
+
+		if rows.Err() != nil {
+			queryErr = rows.Err()
+			return
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		rows, err := st.db.NamedQuery(fmt.Sprintf(sqlQueryKeysCounter, where), filter)
+		if err != nil {
+			countTotalErr = err
+			return
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err := rows.Scan(&total)
+			if err != nil {
+				countTotalErr = err
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if queryErr != nil {
+		return nil, 0, queryErr
+	}
+	if countTotalErr != nil {
+		return nil, 0, countTotalErr
+	}
+
+	return results, total, nil
 }

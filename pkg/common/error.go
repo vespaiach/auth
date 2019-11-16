@@ -1,5 +1,7 @@
 package common
 
+import "errors"
+
 type ErrCode int
 
 const (
@@ -9,20 +11,10 @@ const (
 	ErrDataFailValidation
 )
 
-type AppErr struct {
-	err     error
-	Code    ErrCode
-	Payload map[string]string
-}
-
-func NewAppErr(err error, code ErrCode) *AppErr {
-	return &AppErr{err: err, Code: code}
-}
-
-func (ae *AppErr) Error() string {
-	return ae.err.Error()
-}
-
-func (ae *AppErr) AddMsg(key string, msg string) {
-	ae.Payload[key] = msg
-}
+var (
+	ErrDuplicatedKey      = errors.New("duplicated key")
+	ErrKeyNameInvalid     = errors.New("key name is invalid")
+	ErrKeyNotFound        = errors.New("key doesn't exist")
+	ErrBunchNotFound      = errors.New("bunch doesn't exist")
+	ErrWrongInputDatatype = errors.New("inputted data type is incorrect")
+)

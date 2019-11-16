@@ -2,5 +2,6 @@
 vendor/
 tags*
 data/
+docker/
 .env
 .idea/
