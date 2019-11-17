@@ -77,3 +77,4 @@ func addToContext(s interface{}, key common.ContextKey) kith.RequestFunc {
 		return context.WithValue(ctx, key, s)
 	}
 }
+

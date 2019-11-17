@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"github.com/go-kit/kit/auth/jwt"
+	"github.com/go-kit/kit/endpoint"
 	kith "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/vespaiach/auth/pkg/cf"
@@ -18,6 +20,7 @@ import (
 func MakeUserHandlers(r *mux.Router, appConfig *cf.AppConfig, serv usrmgr.Service) http.Handler {
 	opts := []kith.ServerOption{
 		kith.ServerErrorEncoder(encodeError),
+		kith.ServerBefore(jwt.HTTPToContext()),
 		kith.ServerBefore(addToContext(appConfig, common.AppConfigContextKey)),
 		kith.ServerBefore(addToContext(serv, common.UserManagementService)),
 	}
@@ -71,6 +74,13 @@ func MakeUserHandlers(r *mux.Router, appConfig *cf.AppConfig, serv usrmgr.Servic
 		opts...,
 	)
 
+	loginUserHandler := kith.NewServer(
+		endpoint.Chain(ep.VerifyingUserMiddleware)(ep.IssueTokenEndPoint),
+		decodeVerifyingUserUserRequest,
+		encodeResponse,
+		opts...,
+	)
+
 	r.Handle("/v1/users", addUserHandler).Methods("POST")
 	r.Handle("/v1/users/{name}", getUserHandler).Methods("GET")
 	r.Handle("/v1/users/{name}", modifyUserHandler).Methods("PATCH")
@@ -78,6 +88,7 @@ func MakeUserHandlers(r *mux.Router, appConfig *cf.AppConfig, serv usrmgr.Servic
 	r.Handle("/v1/users/{name}/bunches", addBunchesToUserHandler).Methods("POST")
 	r.Handle("/v1/users/{name}/bunches", getBunchesOfUserHandler).Methods("GET")
 	r.Handle("/v1/users/{name}/keys", getKeysOfUserHandler).Methods("GET")
+	r.Handle("/v1/login", loginUserHandler).Methods("POST")
 
 	return r
 }
@@ -184,4 +195,14 @@ func decodeGettingBunchesOfUserRequest(_ context.Context, r *http.Request) (inte
 func decodeGettingKeysOfUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	params := mux.Vars(r)
 	return params["name"], nil
+}
+
+func decodeVerifyingUserUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	data := new(ep.VerifyingUser)
+	err := json.NewDecoder(r.Body).Decode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

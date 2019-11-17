@@ -3,6 +3,7 @@ package tp
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-kit/kit/auth/jwt"
 	kith "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/vespaiach/auth/pkg/cf"
@@ -17,6 +18,7 @@ import (
 func MakeKeyHandlers(r *mux.Router, appConfig *cf.AppConfig, serv keymgr.Service) http.Handler {
 	opts := []kith.ServerOption{
 		kith.ServerErrorEncoder(encodeError),
+		kith.ServerBefore(jwt.HTTPToContext()),
 		kith.ServerBefore(addToContext(appConfig, common.AppConfigContextKey)),
 		kith.ServerBefore(addToContext(serv, common.KeyManagementService)),
 	}
