@@ -1,0 +1,576 @@
+{
+	"info": {
+		"_postman_id": "cf3e3dd1-7cc5-4494-833b-0f44da1c3fa4",
+		"name": "Key Management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Key",
+			"item": [
+				{
+					"name": "Add a key",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/javascript",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"key\": \"key_to_success\",\n\t\"desc\": \"just for testing\"\n}",
+							"options": {
+								"raw": {
+									"language": "javascript"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Modify a key",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"key\": \"key_to_success_updated\",\n\t\"desc\": \"just for testing updated\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add a key to bunch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/javascript",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"bunch\": \"bunch_of_love\"\n}",
+							"options": {
+								"raw": {
+									"language": "javascript"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success_updated/bunch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success_updated",
+								"bunch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a key",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys/key_to_success_updated",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys",
+								"key_to_success_updated"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query keys",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/keys?page=1&per_page=2&name=key&sort=+key",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"keys"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "2"
+								},
+								{
+									"key": "name",
+									"value": "key"
+								},
+								{
+									"key": "sort",
+									"value": "+key"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Bunch",
+			"item": [
+				{
+					"name": "Add a bunch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"bunch_of_love\",\n\t\"desc\": \"just testing\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Modify a bunch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"bunch_of_love\",\n\t\"desc\": \"just testing updated\",\n\t\"active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches/bunch_of_love",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches",
+								"bunch_of_love"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a bunch",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches/bunch_of_love",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches",
+								"bunch_of_love"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query bunches",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches?page=1&per_page=2&name=bun&active=true&sort=name",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "2"
+								},
+								{
+									"key": "name",
+									"value": "bun"
+								},
+								{
+									"key": "active",
+									"value": "true"
+								},
+								{
+									"key": "sort",
+									"value": "name"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add keys to bunch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"keys\": [\"tname2\", \"tname3\", \"tname4\", \"tname5\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches/bunch_of_love/keys",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches",
+								"bunch_of_love",
+								"keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get keys in bunch",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/bunches/bunch_of_love/keys",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"bunches",
+								"bunch_of_love",
+								"keys"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Add a user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"toan_113\",\n\t\"email\": \"toan@gmail.com\",\n\t\"password\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users/toan_13",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users",
+								"toan_13"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Modify a user",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"toan_1131\",\n\t\"email\": \"toa2n@gmail.com\",\n\t\"active\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users/toan_13",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users",
+								"toan_13"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users?page=2&per_page=2&username=user&email=email&sort=-username",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "2"
+								},
+								{
+									"key": "per_page",
+									"value": "2"
+								},
+								{
+									"key": "username",
+									"value": "user"
+								},
+								{
+									"key": "email",
+									"value": "email"
+								},
+								{
+									"key": "sort",
+									"value": "-username"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add bunches to user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"bunches\": [\"bunch2\", \"bunch4\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users/toan_123/bunches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users",
+								"toan_123",
+								"bunches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get bunches of user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users/toan_123/bunches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users",
+								"toan_123",
+								"bunches"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get keys of user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{version}}/users/toan_123/keys",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{version}}",
+								"users",
+								"toan_123",
+								"keys"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}
