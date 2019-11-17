@@ -45,7 +45,7 @@ type AddingKeyToBunch struct {
 	Bunch string `json:"bunch"`
 }
 
-func AddingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingKeyEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	keych := make(chan *keymgr.Key)
 	keyserv := ctx.Value(common.KeyManagementService).(keymgr.Service)
@@ -87,7 +87,7 @@ func AddingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, e
 	}
 }
 
-func ModifyingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func ModifyingKeyEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	keych := make(chan *keymgr.Key)
 	keyserv := ctx.Value(common.KeyManagementService).(keymgr.Service)
@@ -139,7 +139,7 @@ func ModifyingKeyEndPoint(ctx context.Context, request interface{}) (interface{}
 	}
 }
 
-func GettingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingKeyEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	keych := make(chan *keymgr.Key)
 	keyserv := ctx.Value(common.KeyManagementService).(keymgr.Service)
@@ -175,7 +175,7 @@ func GettingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, 
 	}
 }
 
-func QueryingKeyEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func QueryingKeyEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	keych := make(chan []*keymgr.Key)
 	keyserv := ctx.Value(common.KeyManagementService).(keymgr.Service)
@@ -231,7 +231,7 @@ func QueryingKeyEndPoint(ctx context.Context, request interface{}) (interface{},
 	}
 }
 
-func AddingKeyToBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingKeyToBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	idch := make(chan int64)
 	keyserv := ctx.Value(common.KeyManagementService).(keymgr.Service)

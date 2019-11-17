@@ -3,69 +3,11 @@ package tp
 import (
 	"context"
 	"encoding/json"
-	"github.com/go-kit/kit/auth/jwt"
-	kith "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
-	"github.com/vespaiach/auth/pkg/cf"
-	"github.com/vespaiach/auth/pkg/common"
 	"github.com/vespaiach/auth/pkg/ep"
-	"github.com/vespaiach/auth/pkg/keymgr"
 	"net/http"
 	"strconv"
 )
-
-// MakeKeyHandlers creates key endpoints through http
-func MakeKeyHandlers(r *mux.Router, appConfig *cf.AppConfig, serv keymgr.Service) http.Handler {
-	opts := []kith.ServerOption{
-		kith.ServerErrorEncoder(encodeError),
-		kith.ServerBefore(jwt.HTTPToContext()),
-		kith.ServerBefore(addToContext(appConfig, common.AppConfigContextKey)),
-		kith.ServerBefore(addToContext(serv, common.KeyManagementService)),
-	}
-
-	addKeyHandler := kith.NewServer(
-		ep.AddingKeyEndPoint,
-		decodeAddingKeyRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getKeyHandler := kith.NewServer(
-		ep.GettingKeyEndPoint,
-		decodeGettingKeyRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	modifyKeyHandler := kith.NewServer(
-		ep.ModifyingKeyEndPoint,
-		decodeModifyingKeyRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	queryKeyHandler := kith.NewServer(
-		ep.QueryingKeyEndPoint,
-		decodeQueryingKeyRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	addKeyToBunchHandler := kith.NewServer(
-		ep.AddingKeyToBunchEndPoint,
-		decodeAddingKeyToBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	r.Handle("/v1/keys", addKeyHandler).Methods("POST")
-	r.Handle("/v1/keys/{key}", getKeyHandler).Methods("GET")
-	r.Handle("/v1/keys/{key}", modifyKeyHandler).Methods("PATCH")
-	r.Handle("/v1/keys", queryKeyHandler).Methods("GET")
-	r.Handle("/v1/keys/{key}/bunch", addKeyToBunchHandler).Methods("POST")
-
-	return r
-}
 
 func decodeAddingKeyRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	data := new(ep.AddingKey)

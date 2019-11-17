@@ -4,94 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-kit/kit/auth/jwt"
-	"github.com/go-kit/kit/endpoint"
-	kith "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
-	"github.com/vespaiach/auth/pkg/cf"
-	"github.com/vespaiach/auth/pkg/common"
 	"github.com/vespaiach/auth/pkg/ep"
-	"github.com/vespaiach/auth/pkg/usrmgr"
 	"net/http"
 	"strconv"
 )
-
-// MakeUserHandlers creates user endpoints through http
-func MakeUserHandlers(r *mux.Router, appConfig *cf.AppConfig, serv usrmgr.Service) http.Handler {
-	opts := []kith.ServerOption{
-		kith.ServerErrorEncoder(encodeError),
-		kith.ServerBefore(jwt.HTTPToContext()),
-		kith.ServerBefore(addToContext(appConfig, common.AppConfigContextKey)),
-		kith.ServerBefore(addToContext(serv, common.UserManagementService)),
-	}
-
-	addUserHandler := kith.NewServer(
-		ep.AddingUserEndPoint,
-		decodeAddingUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getUserHandler := kith.NewServer(
-		ep.GettingUserEndPoint,
-		decodeGettingUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	modifyUserHandler := kith.NewServer(
-		ep.ModifyingUserEndPoint,
-		decodeModifyingUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	queryUserHandler := kith.NewServer(
-		ep.QueryingUserEndPoint,
-		decodeQueryingUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	addBunchesToUserHandler := kith.NewServer(
-		ep.AddingBunchesToUserEndPoint,
-		decodeAddingBunchesToUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getBunchesOfUserHandler := kith.NewServer(
-		ep.GettingBunchesOfUserEndPoint,
-		decodeGettingBunchesOfUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getKeysOfUserHandler := kith.NewServer(
-		ep.GettingKeysOfUserEndPoint,
-		decodeGettingKeysOfUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	loginUserHandler := kith.NewServer(
-		endpoint.Chain(ep.VerifyingUserMiddleware)(ep.IssueTokenEndPoint),
-		decodeVerifyingUserUserRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	r.Handle("/v1/users", addUserHandler).Methods("POST")
-	r.Handle("/v1/users/{name}", getUserHandler).Methods("GET")
-	r.Handle("/v1/users/{name}", modifyUserHandler).Methods("PATCH")
-	r.Handle("/v1/users", queryUserHandler).Methods("GET")
-	r.Handle("/v1/users/{name}/bunches", addBunchesToUserHandler).Methods("POST")
-	r.Handle("/v1/users/{name}/bunches", getBunchesOfUserHandler).Methods("GET")
-	r.Handle("/v1/users/{name}/keys", getKeysOfUserHandler).Methods("GET")
-	r.Handle("/v1/login", loginUserHandler).Methods("POST")
-
-	return r
-}
 
 func decodeAddingUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	data := new(ep.AddingUser)

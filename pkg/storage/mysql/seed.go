@@ -110,18 +110,18 @@ DROP TABLE IF EXISTS "bunches";
 DROP TABLE IF EXISTS "users";
 DROP TABLE IF EXISTS "token_histories";
 `
-
+// default password: "password"
 var seedingData = `
-INSERT INTO "keys" (id, "key", "desc") VALUES (1, 'create_action', 'Create a action');
-INSERT INTO "keys" (id, "key", "desc") VALUES (2, 'delete_action', 'Delete a action');
-INSERT INTO "keys" (id, "key", "desc") VALUES (3, 'update_action', 'Update a action');
-INSERT INTO "keys" (id, "key", "desc") VALUES (4, 'view_action', 'View a action');
-INSERT INTO "keys" (id, "key", "desc") VALUES (5 ,'list_action', 'List actions');
-INSERT INTO "keys" (id, "key", "desc") VALUES (6, 'create_user', 'Create a user');
-INSERT INTO "keys" (id, "key", "desc") VALUES (7, 'delete_user', 'Delete a user');
-INSERT INTO "keys" (id, "key", "desc") VALUES (8, 'update_user', 'Update a user');
-INSERT INTO "keys" (id, "key", "desc") VALUES (9, 'view_user', 'View a user');
-INSERT INTO "keys" (id, "key", "desc") VALUES (10 ,'list_user', 'List users');
+INSERT INTO "keys" (id, "key", "desc") VALUES (1, 'add_key', 'Add a key');
+INSERT INTO "keys" (id, "key", "desc") VALUES (2, 'modify_key', 'modify a key');
+INSERT INTO "keys" (id, "key", "desc") VALUES (3, 'get_key', 'get a key');
+INSERT INTO "keys" (id, "key", "desc") VALUES (4, 'query_key', 'list key');
+INSERT INTO "keys" (id, "key", "desc") VALUES (5 ,'add_bunch', 'Add bunch');
+INSERT INTO "keys" (id, "key", "desc") VALUES (6, 'modify_bunch', 'Modify bunch');
+INSERT INTO "keys" (id, "key", "desc") VALUES (7, 'get_bunch', 'Get bunch');
+INSERT INTO "keys" (id, "key", "desc") VALUES (8, 'query_bunch', 'Query bunches');
+INSERT INTO "keys" (id, "key", "desc") VALUES (9, 'add_user', 'add_user');
+INSERT INTO "keys" (id, "key", "desc") VALUES (10 ,'modify_user', 'modify_user');
 INSERT INTO bunches (id, "name", "desc") VALUES (1, 'admin_role', 'Admin role');
 INSERT INTO bunches (id, "name", "desc") VALUES (2, 'staff_role', 'Staff role');
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (1, 1, 1);
@@ -139,8 +139,8 @@ INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (12, 2, 2);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (13, 2, 3);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (14, 2, 4);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (15, 2, 5);
-INSERT INTO "users" (id, username, hash, email) VALUES (1, 'admin', '$2a$10$88y3eBfBma0lQzgEhPg7m.xmZQUE5DhcHqewtz0UvIYIfFZQFnD/G', 'admin@test.com');
-INSERT INTO "users" (id, username, hash, email) VALUES (2, 'staff', '$2a$10$88y3eBfBma0lQzgEhPg7m.xmZQUE5DhcHqewtz0UvIYIfFZQFnD/G', 'staff@test.com');
+INSERT INTO "users" (id, username, hash, email) VALUES (1, 'admin', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', 'admin@test.com');
+INSERT INTO "users" (id, username, hash, email) VALUES (2, 'staff', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', 'staff@test.com');
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (1, 1, 1);
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (2, 1, 2);
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (3, 2, 2);

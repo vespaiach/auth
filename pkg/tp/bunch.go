@@ -4,77 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/go-kit/kit/auth/jwt"
-	kith "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
-	"github.com/vespaiach/auth/pkg/bunchmgr"
-	"github.com/vespaiach/auth/pkg/cf"
-	"github.com/vespaiach/auth/pkg/common"
 	"github.com/vespaiach/auth/pkg/ep"
 	"net/http"
 	"strconv"
 )
-
-// MakeBunchHandlers creates bunch endpoints through http
-func MakeBunchHandlers(r *mux.Router, appConfig *cf.AppConfig, serv bunchmgr.Service) http.Handler {
-	opts := []kith.ServerOption{
-		kith.ServerErrorEncoder(encodeError),
-		kith.ServerBefore(jwt.HTTPToContext()),
-		kith.ServerBefore(addToContext(appConfig, common.AppConfigContextKey)),
-		kith.ServerBefore(addToContext(serv, common.BunchManagementService)),
-	}
-
-	addBunchHandler := kith.NewServer(
-		ep.AddingBunchEndPoint,
-		decodeAddingBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	modifyBunchHandler := kith.NewServer(
-		ep.ModifyingBunchEndPoint,
-		decodeModifyingBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getBunchHandler := kith.NewServer(
-		ep.GettingBunchEndPoint,
-		decodeGettingBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	queryBunchHandler := kith.NewServer(
-		ep.QueryingBunchEndPoint,
-		decodeQueryingBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	addKeysToBunchHandler := kith.NewServer(
-		ep.AddingKeysToBunchEndPoint,
-		decodeAddingKeysToBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	getKeysInBunchHandler := kith.NewServer(
-		ep.GettingKeysInBunchEndPoint,
-		decodeGettingKeysInBunchRequest,
-		encodeResponse,
-		opts...,
-	)
-
-	r.Handle("/v1/bunches", addBunchHandler).Methods("POST")
-	r.Handle("/v1/bunches/{name}", modifyBunchHandler).Methods("PATCH")
-	r.Handle("/v1/bunches/{name}", getBunchHandler).Methods("GET")
-	r.Handle("/v1/bunches", queryBunchHandler).Methods("GET")
-	r.Handle("/v1/bunches/{name}/keys", addKeysToBunchHandler).Methods("POST")
-	r.Handle("/v1/bunches/{name}/keys", getKeysInBunchHandler).Methods("GET")
-
-	return r
-}
 
 func decodeAddingBunchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	data := new(ep.AddingBunch)

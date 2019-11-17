@@ -49,7 +49,7 @@ type AddingKeysToBunch struct {
 	Bunch string
 }
 
-func AddingBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	bch := make(chan *bunchmgr.Bunch)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)
@@ -92,7 +92,7 @@ func AddingBunchEndPoint(ctx context.Context, request interface{}) (interface{},
 	}
 }
 
-func ModifyingBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func ModifyingBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	success := make(chan bool)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)
@@ -137,7 +137,7 @@ func ModifyingBunchEndPoint(ctx context.Context, request interface{}) (interface
 	}
 }
 
-func GettingBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	bch := make(chan *bunchmgr.Bunch)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)
@@ -179,7 +179,7 @@ func GettingBunchEndPoint(ctx context.Context, request interface{}) (interface{}
 	}
 }
 
-func QueryingBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func QueryingBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	bch := make(chan []*bunchmgr.Bunch)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)
@@ -236,7 +236,7 @@ func QueryingBunchEndPoint(ctx context.Context, request interface{}) (interface{
 	}
 }
 
-func AddingKeysToBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingKeysToBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	qch := make(chan bool)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)
@@ -267,7 +267,7 @@ func AddingKeysToBunchEndPoint(ctx context.Context, request interface{}) (interf
 	}
 }
 
-func GettingKeysInBunchEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingKeysInBunchEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	kch := make(chan []*bunchmgr.Key)
 	bserv := ctx.Value(common.BunchManagementService).(bunchmgr.Service)

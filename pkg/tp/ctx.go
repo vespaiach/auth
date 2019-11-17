@@ -48,6 +48,12 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case common.ErrWrongInputDatatype:
 		result.fail(http.StatusInternalServerError, err)
 		break
+	case common.ErrWrongJWTToken, common.ErrMissingJWTToken, common.ErrWrongCredentials:
+		result.fail(http.StatusUnauthorized, err)
+		break
+	case common.ErrNotAllowed:
+		result.fail(http.StatusForbidden, err)
+		break
 	case common.ErrDuplicatedUsername, common.ErrEmailInvalid, common.ErrDuplicatedEmail,
 		common.ErrUsernameInvalid, common.ErrDuplicatedBunch, common.ErrBunchNameInvalid,
 		common.ErrKeyNameInvalid, common.ErrMissingHash, common.ErrDuplicatedKey,
@@ -77,4 +83,3 @@ func addToContext(s interface{}, key common.ContextKey) kith.RequestFunc {
 		return context.WithValue(ctx, key, s)
 	}
 }
-

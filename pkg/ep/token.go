@@ -19,8 +19,8 @@ import (
 // TokenClaims token's claims
 type TokenClaims struct {
 	jwtgo.StandardClaims
-	Bunches []string
-	Keys    []string
+	Bunches []string `json:"bunches"`
+	Keys    []string `json:"keys"`
 }
 
 type Token struct {
@@ -42,7 +42,7 @@ func TokenParserMiddleware(ep endpoint.Endpoint) endpoint.Endpoint {
 			return nil, common.ErrMissingJWTToken
 		}
 
-		token, err := jwtgo.ParseWithClaims(tokenStr, TokenClaims{}, func(token *jwtgo.Token) (interface{}, error) {
+		token, err := jwtgo.ParseWithClaims(tokenStr, &TokenClaims{}, func(token *jwtgo.Token) (interface{}, error) {
 			if token.Method != jwtgo.SigningMethodHS256 {
 				return nil, common.ErrWrongJWTToken
 			}
@@ -106,24 +106,24 @@ func VerifyingUserMiddleware(ep endpoint.Endpoint) endpoint.Endpoint {
 	}
 }
 
-// KeyChecker is a middleware for checking key
-func KeyChecker(key string) endpoint.Middleware {
+// KeyCheckerMiddleware is for checking key
+func KeyCheckerMiddleware(key string) endpoint.Middleware {
 	return func(ep endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-			claims, ok := ctx.Value(jwt.JWTClaimsContextKey).(TokenClaims)
+			claims, ok := ctx.Value(jwt.JWTClaimsContextKey).(*TokenClaims)
 			if !ok {
 				return nil, common.ErrMissingJWTToken
 			}
 
-			if sort.SearchStrings(claims.Keys, key) < len(claims.Keys) {
+			if contains(claims.Keys, key) {
 				return ep(ctx, request)
 			}
-			return nil, common.ErrWrongJWTToken
+			return nil, common.ErrNotAllowed
 		}
 	}
 }
 
-func IssueTokenEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func IssueTokenEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	ach := make(chan string)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -221,4 +221,14 @@ func createToken(user *usrmgr.User, bunches []*usrmgr.Bunch, keys []*usrmgr.Key,
 		blst,
 		klst,
 	})
+}
+
+// Todo: improve string searching algorithm
+func contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }

@@ -55,7 +55,7 @@ type AddingBunchesToUser struct {
 	Username string
 }
 
-func AddingUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	uch := make(chan *usrmgr.User)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -110,7 +110,7 @@ func AddingUserEndPoint(ctx context.Context, request interface{}) (interface{}, 
 	}
 }
 
-func GettingUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	uch := make(chan *usrmgr.User)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -152,7 +152,7 @@ func GettingUserEndPoint(ctx context.Context, request interface{}) (interface{},
 	}
 }
 
-func ModifyingUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func ModifyingUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	success := make(chan bool)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -198,7 +198,7 @@ func ModifyingUserEndPoint(ctx context.Context, request interface{}) (interface{
 	}
 }
 
-func QueryingUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func QueryingUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	uch := make(chan []*usrmgr.User)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -256,7 +256,7 @@ func QueryingUserEndPoint(ctx context.Context, request interface{}) (interface{}
 	}
 }
 
-func AddingBunchesToUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func AddingBunchesToUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	qch := make(chan bool)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -287,7 +287,7 @@ func AddingBunchesToUserEndPoint(ctx context.Context, request interface{}) (inte
 	}
 }
 
-func GettingBunchesOfUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingBunchesOfUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	bch := make(chan []*usrmgr.Bunch)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
@@ -329,7 +329,7 @@ func GettingBunchesOfUserEndPoint(ctx context.Context, request interface{}) (int
 	}
 }
 
-func GettingKeysOfUserEndPoint(ctx context.Context, request interface{}) (interface{}, error) {
+func GettingKeysOfUserEndpoint(ctx context.Context, request interface{}) (interface{}, error) {
 	erch := make(chan error)
 	kch := make(chan []*usrmgr.Key)
 	userv := ctx.Value(common.UserManagementService).(usrmgr.Service)
