@@ -15,7 +15,8 @@ type testApp struct {
 	kst  *KeyMysqlStorer
 	bst  *BunchMysqlStorer
 	bkst *BunchKeyMysqlStorer
-	ust  *UserStorage
+	ust  *UserMysqlStorage
+	ubst *UserBunchMysqlStorage
 }
 
 var test *testApp
@@ -32,7 +33,8 @@ func TestMain(m *testing.M) {
 		kst:  NewKeyMysqlStorer(db),
 		bst:  NewBunchMysqlStorer(db),
 		bkst: NewBunchKeyMysqlStorer(db),
-		ust:  NewUserStorage(db),
+		ust:  NewUserMysqlStorage(db),
+		ubst: NewUserBunchMysqlStorage(db),
 	}
 
 	test.mig.Drop()

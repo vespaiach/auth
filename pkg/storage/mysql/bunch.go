@@ -33,7 +33,7 @@ func NewBunchKeyMysqlStorer(db *sqlx.DB) *BunchKeyMysqlStorer {
 	}
 }
 
-func (st *BunchMysqlStorer) Insert(u storage.Bunch) (int64, error) {
+func (st *BunchMysqlStorer) Insert(u storage.CreateBunch) (int64, error) {
 	sql := "INSERT INTO bunches (`name`, `desc`, `active`, updated_at) VALUES (?, ?, ?, ?);"
 
 	stmt, err := st.db.Prepare(sql)
@@ -54,7 +54,7 @@ func (st *BunchMysqlStorer) Insert(u storage.Bunch) (int64, error) {
 	return lastID, nil
 }
 
-func (st *BunchMysqlStorer) Update(u storage.Bunch) error {
+func (st *BunchMysqlStorer) Update(u storage.UpdateBunch) error {
 	var (
 		sql      string = "UPDATE bunches SET %s WHERE id = :id;"
 		fields   string
@@ -373,7 +373,6 @@ func (st *BunchKeyMysqlStorer) Query(queries storage.QueryBunchKey, sorts storag
 
 	sql = fmt.Sprintf(sql, where, order)
 	sqlcount = fmt.Sprintf(sqlcount, where)
-	fmt.Println(sql)
 
 	wg.Add(1)
 	go func() {

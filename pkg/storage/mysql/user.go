@@ -1,37 +1,47 @@
 package mysql
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"github.com/vespaiach/auth/pkg/common"
-	"github.com/vespaiach/auth/pkg/usrmgr"
-	"strings"
+	"github.com/vespaiach/auth/pkg/storage"
 	"sync"
 	"time"
 )
 
-// UserStorage implements db's storage for user
-type UserStorage struct {
+// UserMysqlStorage implements db's storage for user
+type UserMysqlStorage struct {
 	db *sqlx.DB
 }
 
-// NewUserStorage create new instance of BunchStorage
-func NewUserStorage(db *sqlx.DB) *UserStorage {
-	return &UserStorage{
+// UserBunchMysqlStorage implements db's storage for user
+type UserBunchMysqlStorage struct {
+	db *sqlx.DB
+}
+
+// NewUserMysqlStorage create new instance of UserMysqlStorage
+func NewUserMysqlStorage(db *sqlx.DB) *UserMysqlStorage {
+	return &UserMysqlStorage{
 		db,
 	}
 }
 
-var sqlAddUser = "INSERT INTO users(username, email, hash) VALUES(?, ?, ?);"
+// UserBunchMysqlStorage create new instance of UserBunchMysqlStorage
+func NewUserBunchMysqlStorage(db *sqlx.DB) *UserBunchMysqlStorage {
+	return &UserBunchMysqlStorage{
+		db,
+	}
+}
 
-func (st *UserStorage) AddUser(username string, email string, hash string) (int64, error) {
-	stmt, err := st.db.Prepare(sqlAddUser)
+func (st *UserMysqlStorage) Insert(u storage.CreateUser) (int64, error) {
+	sql := "INSERT INTO users(full_name, `username`, `email`, `hash`, `salt`, updated_at) " +
+		"VALUES(?, ?, ?, ?, ?, ?);"
+
+	stmt, err := st.db.Prepare(sql)
 	if err != nil {
 		return 0, err
 	}
 
-	res, err := stmt.Exec(username, email, hash)
+	res, err := stmt.Exec(u.FullName, u.Username, u.Email, u.Hash, u.Salt, time.Now())
 	if err != nil {
 		return 0, err
 	}
@@ -44,43 +54,57 @@ func (st *UserStorage) AddUser(username string, email string, hash string) (int6
 	return lastID, nil
 }
 
-var sqlUpdateUser = "UPDATE `users` SET %s	WHERE id = :id;"
+func (st *UserMysqlStorage) Update(u storage.UpdateUser) error {
+	var (
+		sql       = "UPDATE `users` SET %s	WHERE id = :id;"
+		condition string
+		prefix    string
+	)
 
-func (st *UserStorage) ModifyUser(id int64, username string, email string, hash string, active sql.NullBool) error {
 	updating := make(map[string]interface{})
-	var condition string
-	var prefix string
 
-	if len(username) > 0 {
-		updating["username"] = username
+	if len(u.FullName) > 0 {
+		updating["full_name"] = u.FullName
+		condition += prefix + "`full_name` = :full_name"
+		prefix = ", "
+	}
+
+	if len(u.Username) > 0 {
+		updating["username"] = u.Username
 		condition += prefix + "`username` = :username"
 		prefix = ", "
 	}
 
-	if len(email) > 0 {
-		updating["email"] = email
+	if len(u.Email) > 0 {
+		updating["email"] = u.Email
 		condition += prefix + "`email` = :email"
 		prefix = ", "
 	}
 
-	if len(hash) > 0 {
-		updating["hash"] = hash
+	if len(u.Hash) > 0 {
+		updating["hash"] = u.Hash
 		condition += prefix + "`hash` = :hash"
 		prefix = ", "
 	}
 
-	if active.Valid {
-		updating["active"] = active.Bool
+	if len(u.Salt) > 0 {
+		updating["salt"] = u.Salt
+		condition += prefix + "`salt` = :salt"
+		prefix = ", "
+	}
+
+	if u.Active.IsSet {
+		updating["active"] = u.Active.Bool
 		condition += prefix + "`active` = :active"
 		prefix = ", "
 	}
 
 	if len(updating) > 0 {
-		updating["id"] = id
+		updating["id"] = u.ID
 		updating["updated_at"] = time.Now()
 		condition += prefix + "`updated_at` = :updated_at"
 
-		_, err := st.db.NamedExec(fmt.Sprintf(sqlUpdateUser, condition), updating)
+		_, err := st.db.NamedExec(fmt.Sprintf(sql, condition), updating)
 		if err != nil {
 			return err
 		}
@@ -89,11 +113,11 @@ func (st *UserStorage) ModifyUser(id int64, username string, email string, hash 
 	return nil
 }
 
-var sqlGetUserByName = "SELECT id, `username`, `email`, `hash`, active, created_at, updated_at FROM `users` " +
-	"WHERE `username` = ? LIMIT 1;"
+func (st *UserMysqlStorage) Get(id int64) (*storage.User, error) {
+	sql := "SELECT id, full_name, `username`, `email`, `hash`, `salt`, `active`, updated_at FROM `users` " +
+		"WHERE `id` = ? LIMIT 1;"
 
-func (st *UserStorage) GetUserByUsername(username string) (*usrmgr.User, error) {
-	rows, err := st.db.Queryx(sqlGetUserByName, username)
+	rows, err := st.db.Queryx(sql, id)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +127,8 @@ func (st *UserStorage) GetUserByUsername(username string) (*usrmgr.User, error) 
 		return nil, nil
 	}
 
-	u := new(usrmgr.User)
-	err = rows.Scan(&u.ID, &u.Username, &u.Email, &u.Hash, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+	u := &storage.User{Active: storage.Boolean{IsSet: true}}
+	err = rows.Scan(&u.ID, &u.FullName, &u.Username, &u.Email, &u.Hash, &u.Salt, &u.Active.Bool, &u.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +136,11 @@ func (st *UserStorage) GetUserByUsername(username string) (*usrmgr.User, error) 
 	return u, nil
 }
 
-var sqlGetUserEmail = "SELECT id, `username`, `email`, `hash`, active, created_at, updated_at FROM `users` " +
-	"WHERE `email` = ? LIMIT 1;"
+func (st *UserMysqlStorage) GetByName(username string) (*storage.User, error) {
+	sql := "SELECT id, full_name, `username`, `email`, `hash`, `salt`, `active`, updated_at FROM `users` " +
+		"WHERE `username` = ? LIMIT 1;"
 
-func (st *UserStorage) GetUserByEmail(email string) (*usrmgr.User, error) {
-	rows, err := st.db.Queryx(sqlGetUserEmail, email)
+	rows, err := st.db.Queryx(sql, username)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +150,8 @@ func (st *UserStorage) GetUserByEmail(email string) (*usrmgr.User, error) {
 		return nil, nil
 	}
 
-	u := new(usrmgr.User)
-	err = rows.Scan(&u.ID, &u.Username, &u.Email, &u.Hash, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+	u := &storage.User{Active: storage.Boolean{IsSet: true}}
+	err = rows.Scan(&u.ID, &u.FullName, &u.Username, &u.Email, &u.Hash, &u.Salt, &u.Active.Bool, &u.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -135,11 +159,11 @@ func (st *UserStorage) GetUserByEmail(email string) (*usrmgr.User, error) {
 	return u, nil
 }
 
-var sqlGetUserByID = "SELECT id, `username`, `email`, `hash`, active, created_at, updated_at FROM `users` " +
-	"WHERE `id` = ? LIMIT 1;"
+func (st *UserMysqlStorage) GetByEmail(email string) (*storage.User, error) {
+	sql := "SELECT id, full_name, `username`, `email`, `hash`, `salt`, `active`, updated_at FROM `users` " +
+		"WHERE `email` = ? LIMIT 1;"
 
-func (st *UserStorage) GetUser(id int64) (*usrmgr.User, error) {
-	rows, err := st.db.Queryx(sqlGetUserByID, id)
+	rows, err := st.db.Queryx(sql, email)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +173,8 @@ func (st *UserStorage) GetUser(id int64) (*usrmgr.User, error) {
 		return nil, nil
 	}
 
-	u := new(usrmgr.User)
-	err = rows.Scan(&u.ID, &u.Username, &u.Email, &u.Hash, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+	u := &storage.User{Active: storage.Boolean{IsSet: true}}
+	err = rows.Scan(&u.ID, &u.FullName, &u.Username, &u.Email, &u.Hash, &u.Salt, &u.Active.Bool, &u.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -158,74 +182,93 @@ func (st *UserStorage) GetUser(id int64) (*usrmgr.User, error) {
 	return u, nil
 }
 
-var sqlAddBunchesToUser = "INSERT INTO `user_bunches` (user_id, bunch_id, created_at) VALUES %s;"
-
-func (st *UserStorage) AddBunchesToUser(userID int64, bunchIDs []int64) error {
-	updating := make([]string, 0, len(bunchIDs))
-	for _, id := range bunchIDs {
-		updating = append(updating, fmt.Sprintf("(%d, %d, :created_at)", userID, id))
-	}
-
-	sql := fmt.Sprintf(sqlAddBunchesToUser, strings.Join(updating, ", "))
-
-	_, err := st.db.NamedExec(sql, map[string]interface{}{"created_at": time.Now()})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var sqlQueryUsers = "SELECT id, `username`, `email`, `hash`, active, created_at, updated_at FROM `users` %s ORDER BY %s LIMIT :offset, :limit;"
-var sqlQueryUsersCounter = "SELECT count(id) FROM `users` %s;"
-
-func (st *UserStorage) QueryUsers(take int64, skip int64, username string, email string, active sql.NullBool,
-	sortby string, direction common.SortingDirection) ([]*usrmgr.User, int64, error) {
-
+func (st *UserMysqlStorage) Query(queries storage.QueryUser, sorts storage.SortUser) ([]*storage.User, int64, error) {
 	var (
+		sql           = "SELECT id, full_name, `username`, `email`, `hash`, `salt`, active, updated_at FROM `users` %s ORDER BY %s LIMIT :offset, :limit;"
+		sqlcount      = "SELECT count(id) FROM `users` %s;"
+		orderPrefix   string
 		order         string
+		wherePrefix   = "WHERE "
 		where         string
-		sql           string
-		filter        map[string]interface{}
 		wg            sync.WaitGroup
 		queryErr      error
 		countTotalErr error
-		results       []*usrmgr.User
+		results       []*storage.User
 		total         int64
-		prefix        string
 	)
 
-	filter = make(map[string]interface{})
-
-	if len(username) > 0 {
-		where = "WHERE `username` LIKE :username"
-		filter["username"] = "%" + username + "%"
-		prefix = " AND "
-	} else {
-		prefix = " WHERE "
+	filter := map[string]interface{}{"limit": queries.Limit, "offset": queries.Offset}
+	if queries.Limit == 0 {
+		filter["queries"] = storage.DefaultLimit
 	}
 
-	if len(email) > 0 {
-		where += prefix + "`email` LIKE :email"
-		filter["email"] = "%" + email + "%"
-		prefix = " AND "
+	if len(queries.FullName) > 0 {
+		filter["full_name"] = "%" + queries.FullName + "%"
+		where += wherePrefix + "`full_name` LIKE :full_name"
+		wherePrefix = " AND "
 	}
 
-	if active.Valid {
-		where += prefix + "`active` = :active"
-		filter["active"] = active.Bool
+	if len(queries.Username) > 0 {
+		filter["username"] = "%" + queries.Username + "%"
+		where += wherePrefix + "`username` LIKE :username"
+		wherePrefix = " AND "
 	}
 
-	if direction == common.Descending {
-		order = fmt.Sprintf("`%s` DESC, id", sortby)
-	} else {
-		order = fmt.Sprintf("`%s` ASC, id", sortby)
+	if len(queries.Email) > 0 {
+		filter["desc"] = "%" + queries.Email + "%"
+		where += wherePrefix + "`email` LIKE :email"
+		wherePrefix = " AND "
 	}
 
-	sql = fmt.Sprintf(sqlQueryUsers, where, order)
+	if queries.Active.IsSet {
+		filter["active"] = queries.Active.Bool
+		where += wherePrefix + "`active` = :active"
+		wherePrefix = " AND "
+	}
 
-	filter["offset"] = skip
-	filter["limit"] = take
+	if !queries.From.IsZero() {
+		filter["from"] = queries.From
+		where += wherePrefix + "updated_at > :from"
+		wherePrefix = " AND "
+	}
+
+	if !queries.To.IsZero() {
+		filter["to"] = queries.To
+		where += wherePrefix + "updated_at <= :to"
+		wherePrefix = " AND "
+	}
+
+	if sorts.Username != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`username` %s", getOrderDirection(sorts.Username))
+		orderPrefix = " , "
+	}
+
+	if sorts.FullName != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`full_name` %s", getOrderDirection(sorts.FullName))
+		orderPrefix = " , "
+	}
+
+	if sorts.Email != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`email` %s", getOrderDirection(sorts.Email))
+		orderPrefix = " , "
+	}
+
+	if sorts.UpdatedAt != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`updated_at` %s", getOrderDirection(sorts.UpdatedAt))
+		orderPrefix = " , "
+	}
+
+	if sorts.Active != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`active` %s", getOrderDirection(sorts.Active))
+		orderPrefix = " , "
+	}
+
+	if len(order) == 0 {
+		order = "`id` DESC"
+	}
+
+	sql = fmt.Sprintf(sql, where, order)
+	sqlcount = fmt.Sprintf(sqlcount, where)
 
 	wg.Add(1)
 	go func() {
@@ -237,10 +280,10 @@ func (st *UserStorage) QueryUsers(take int64, skip int64, username string, email
 		}
 		defer rows.Close()
 
-		results = make([]*usrmgr.User, 0, take)
+		results = make([]*storage.User, 0, queries.Limit)
 		for rows.Next() {
-			u := new(usrmgr.User)
-			err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Hash, &u.Active, &u.CreatedAt, &u.UpdatedAt)
+			u := &storage.User{Active: storage.Boolean{IsSet: true}}
+			err := rows.Scan(&u.ID, &u.FullName, &u.Username, &u.Email, &u.Hash, &u.Salt, &u.Active.Bool, &u.UpdatedAt)
 			if err != nil {
 				queryErr = err
 				return
@@ -258,7 +301,7 @@ func (st *UserStorage) QueryUsers(take int64, skip int64, username string, email
 	go func() {
 		defer wg.Done()
 
-		rows, err := st.db.NamedQuery(fmt.Sprintf(sqlQueryUsersCounter, where), filter)
+		rows, err := st.db.NamedQuery(sqlcount, filter)
 		if err != nil {
 			countTotalErr = err
 			return
@@ -286,96 +329,176 @@ func (st *UserStorage) QueryUsers(take int64, skip int64, username string, email
 	return results, total, nil
 }
 
-var sqlGetBunchIDs = "SELECT id FROM bunches WHERE `name` IN (%s);"
+func (st *UserBunchMysqlStorage) Insert(u storage.CreateUserBunch) (int64, error) {
+	sql := "INSERT INTO user_bunches (user_id, bunch_id, updated_at) VALUES(?, ?, ?);"
 
-func (st *UserStorage) GetBunchIDs(bunches []string) ([]int64, error) {
-	len := len(bunches)
-	conditions := make([]string, 0, len)
-	values := make([]interface{}, 0, len)
-	for i := 0; i < len; i++ {
-		conditions = append(conditions, "?")
-		values = append(values, interface{}(bunches[i]))
-	}
-
-	sql := fmt.Sprintf(sqlGetBunchIDs, strings.Join(conditions, ","))
-	rows, err := st.db.Queryx(sql, values...)
+	stmt, err := st.db.Prepare(sql)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	defer rows.Close()
 
-	results := make([]int64, 0)
-	for rows.Next() {
-		var id int64
-		err := rows.Scan(&id)
+	res, err := stmt.Exec(u.UserID, u.BunchID, time.Now())
+	if err != nil {
+		return 0, err
+	}
+
+	lastID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastID, nil
+}
+
+func (st *UserBunchMysqlStorage) Delete(id int64) error {
+	sql := "DELETE FROM `user_bunches` WHERE id=?"
+
+	stmt, err := st.db.Prepare(sql)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (st *UserBunchMysqlStorage) Query(queries storage.QueryUserBunch, sorts storage.SortUserBunch) ([]*storage.AggregateUserBunch, int64, error) {
+	var (
+		sql = "SELECT `users`.id, `users`.full_name, `users`.`username`, `users`.`email`, `users`.`hash`, " +
+			"`users`.`salt`, `users`.`active`, `users`.updated_at, bunches.`id`, bunches.`name`, bunches.`desc`, " +
+			"bunches.`active`, bunches.updated_at, user_bunches.`id`, user_bunches.user_id, user_bunches.bunch_id, " +
+			"user_bunches.updated_at FROM `users` " +
+			"INNER JOIN user_bunches ON `users`.id = user_bunches.user_id " +
+			"INNER JOIN bunches ON user_bunches.bunch_id = bunches.`id` " +
+			"%s ORDER BY %s LIMIT :offset, :limit;"
+		sqlcount = "SELECT count(user_bunches.`id`) FROM `users` " +
+			"INNER JOIN user_bunches ON `users`.id = user_bunches.user_id " +
+			"INNER JOIN bunches ON user_bunches.bunch_id = bunches.`id` %s;"
+		orderPrefix   string
+		order         string
+		wherePrefix   = "WHERE "
+		where         string
+		wg            sync.WaitGroup
+		queryErr      error
+		countTotalErr error
+		results       []*storage.AggregateUserBunch
+		total         int64
+	)
+
+	filter := map[string]interface{}{"limit": queries.Limit, "offset": queries.Offset}
+	if queries.Limit == 0 {
+		filter["queries"] = storage.DefaultLimit
+	}
+
+	if len(queries.Username) > 0 {
+		filter["username"] = "%" + queries.Username + "%"
+		where += wherePrefix + "`users`.`username` LIKE :username"
+		wherePrefix = " AND "
+	}
+
+	if len(queries.BunchName) > 0 {
+		filter["name"] = "%" + queries.BunchName + "%"
+		where += wherePrefix + "bunches.`name` LIKE :name"
+		wherePrefix = " AND "
+	}
+
+	if queries.UserActive.IsSet {
+		filter["user_active"] = queries.UserActive.Bool
+		where += wherePrefix + "`users`.`active` = :user_active"
+		wherePrefix = " AND "
+	}
+
+	if queries.BunchActive.IsSet {
+		filter["user_active"] = queries.BunchActive.Bool
+		where += wherePrefix + "bunches.`active` = :user_active"
+		wherePrefix = " AND "
+	}
+
+	if sorts.Username != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`users`.`username` %s", getOrderDirection(sorts.Username))
+		orderPrefix = " , "
+	}
+
+	if sorts.BunchName != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("bunches.`name` %s", getOrderDirection(sorts.BunchName))
+		orderPrefix = " , "
+	}
+
+	if len(order) == 0 {
+		order = "user_bunches.`id` DESC"
+	}
+
+	sql = fmt.Sprintf(sql, where, order)
+	sqlcount = fmt.Sprintf(sqlcount, where)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rows, err := st.db.NamedQuery(sql, filter)
 		if err != nil {
-			return nil, err
+			queryErr = err
+			return
 		}
-		results = append(results, id)
-	}
+		defer rows.Close()
 
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
+		results = make([]*storage.AggregateUserBunch, 0, queries.Limit)
+		for rows.Next() {
+			u := &storage.User{Active: storage.Boolean{IsSet: true}}
+			b := &storage.Bunch{Active: storage.Boolean{IsSet: true}}
+			ub := &storage.UserBunch{}
 
-	return results, nil
-}
-
-var sqlGetBunchesByUsername = "SELECT bunches.id, bunches.`name`, bunches.`desc`, bunches.active, " +
-	"bunches.created_at, bunches.updated_at FROM `user_bunches` " +
-	"INNER JOIN `users` ON `user_bunches`.user_id = `users`.id " +
-	"INNER JOIN `bunches` ON `bunches`.id = `user_bunches`.bunch_id " +
-	"WHERE `users`.username = ?"
-
-func (st *UserStorage) GetBunches(username string) ([]*usrmgr.Bunch, error) {
-	rows, err := st.db.Queryx(sqlGetBunchesByUsername, username)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	results := make([]*usrmgr.Bunch, 0)
-	for rows.Next() {
-		b := new(usrmgr.Bunch)
-		if err := rows.Scan(&b.ID, &b.Name, &b.Desc, &b.Active, &b.CreatedAt, &b.UpdatedAt); err != nil {
-			return nil, err
+			err := rows.Scan(&u.ID, &u.FullName, &u.Username, &u.Email, &u.Hash, &u.Salt, &u.Active.Bool, &u.UpdatedAt,
+				&b.ID, &b.Name, &b.Desc, &b.Active.Bool, &u.UpdatedAt,
+				&ub.ID, &ub.UserID, &ub.BunchID, &ub.UpdatedAt)
+			if err != nil {
+				queryErr = err
+				return
+			}
+			results = append(results, &storage.AggregateUserBunch{
+				User:      u,
+				Bunch:     b,
+				UserBunch: ub,
+			})
 		}
-		results = append(results, b)
-	}
 
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
-
-	return results, nil
-}
-
-var sqlGetKeysByUsername = "SELECT DISTINCT `keys`.id, `keys`.`key`, `keys`.`desc`, `keys`.created_at, `keys`.updated_at " +
-	"FROM `users` INNER JOIN user_bunches ON `user_bunches`.user_id = `users`.id " +
-	"INNER JOIN bunches ON bunches.id = user_bunches.bunch_id " +
-	"INNER JOIN bunch_keys ON bunch_keys.bunch_id = bunches.id " +
-	"INNER JOIN `keys` ON `keys`.id = bunch_keys.key_id " +
-	"WHERE `users`.username = ?"
-
-func (st *UserStorage) GetKeys(username string) ([]*usrmgr.Key, error) {
-	rows, err := st.db.Queryx(sqlGetKeysByUsername, username)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	results := make([]*usrmgr.Key, 0)
-	for rows.Next() {
-		key := new(usrmgr.Key)
-		if err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt); err != nil {
-			return nil, err
+		if rows.Err() != nil {
+			queryErr = rows.Err()
+			return
 		}
-		results = append(results, key)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		rows, err := st.db.NamedQuery(sqlcount, filter)
+		if err != nil {
+			countTotalErr = err
+			return
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err := rows.Scan(&total)
+			if err != nil {
+				countTotalErr = err
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if queryErr != nil {
+		return nil, 0, queryErr
+	}
+	if countTotalErr != nil {
+		return nil, 0, countTotalErr
 	}
 
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
-
-	return results, nil
+	return results, total, nil
 }

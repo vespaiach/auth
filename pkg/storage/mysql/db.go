@@ -139,18 +139,21 @@ func (m *Migrator) createSeedingBunch(beforeCreate func(map[string]interface{}))
 
 func (m *Migrator) createSeedingUser(beforeCreate func(map[string]interface{})) int64 {
 	fields := map[string]interface{}{
-		"username": fmt.Sprintf("username_%s", strconv.Itoa(inc.New())),
-		"email":    fmt.Sprintf("email_%s", strconv.Itoa(inc.New())),
-		"hash":     fmt.Sprintf("hash_%s", strconv.Itoa(inc.New())),
-		"active":   true,
+		"full_name":  fmt.Sprintf("full_name_%s", strconv.Itoa(inc.New())),
+		"username":   fmt.Sprintf("username_%s", strconv.Itoa(inc.New())),
+		"email":      fmt.Sprintf("email_%s", strconv.Itoa(inc.New())),
+		"hash":       fmt.Sprintf("hash_%s", strconv.Itoa(inc.New())),
+		"salt":       fmt.Sprintf("salt_%s", strconv.Itoa(inc.New())),
+		"active":     true,
+		"updated_at": time.Now(),
 	}
 
 	if beforeCreate != nil {
 		beforeCreate(fields)
 	}
 
-	result, _ := m.db.NamedExec("INSERT INTO users(username, email, hash, active) "+
-		"VALUES(:username, :email, :hash, :active);", fields)
+	result, _ := m.db.NamedExec("INSERT INTO users(full_name, `username`, `email`, `hash`, `salt`, `active`, updated_at) "+
+		"VALUES(:full_name, :username, :email, :hash, :salt, :active, :updated_at);", fields)
 	id, _ := result.LastInsertId()
 
 	return id

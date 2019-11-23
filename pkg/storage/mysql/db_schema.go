@@ -25,12 +25,13 @@ ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS "users" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  "full_name" VARCHAR(64) NOT NULL,
   "username" VARCHAR(32) NOT NULL,
   "email" VARCHAR(64) NOT NULL,
-  "hash" VARCHAR(255) NOT NULL,
+  "hash" VARCHAR(128) NOT NULL,
+  "salt" VARCHAR(32) NOT NULL,
   "active" TINYINT(1) NOT NULL DEFAULT 1,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id"),
   UNIQUE INDEX "users_username_uniq" ("username" ASC),
   UNIQUE INDEX "users_email_uniq" ("email" ASC),
@@ -82,7 +83,7 @@ CREATE TABLE IF NOT EXISTS "user_bunches" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   "user_id" BIGINT(20) UNSIGNED NOT NULL,
   "bunch_id" BIGINT(20) UNSIGNED NOT NULL,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id"),
   INDEX "user_bunch_user_id_idx" ("user_id" ASC),
   INDEX "user_bunch_bunch_id_idx" ("bunch_id" ASC),
@@ -138,8 +139,8 @@ INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (12, 2, 2);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (13, 2, 3);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (14, 2, 4);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (15, 2, 5);
-INSERT INTO "users" (id, username, hash, email) VALUES (1, 'admin', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', 'admin@test.com');
-INSERT INTO "users" (id, username, hash, email) VALUES (2, 'staff', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', 'staff@test.com');
+INSERT INTO "users" (id, full_name, username, hash, salt, email) VALUES (1, 'full_name', 'admin', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', '123', 'admin@test.com');
+INSERT INTO "users" (id, full_name, username, hash, salt, email) VALUES (2, 'full_name', 'staff', '$2a$10$AdPyZkgVv70bXz9JvZLpH.CCQEzb8MbK8vMHIVQyCKtWestIyK46K', '123', 'staff@test.com');
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (1, 1, 1);
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (2, 1, 2);
 INSERT INTO user_bunches (id, user_id, bunch_id) VALUES (3, 2, 2);

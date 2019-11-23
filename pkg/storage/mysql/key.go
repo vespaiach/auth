@@ -21,7 +21,7 @@ func NewKeyMysqlStorer(db *sqlx.DB) *KeyMysqlStorer {
 	}
 }
 
-func (st *KeyMysqlStorer) Insert(k storage.Key) (int64, error) {
+func (st *KeyMysqlStorer) Insert(k storage.CreateKey) (int64, error) {
 	sql := "INSERT INTO `keys` (`name`, `desc`, updated_at) VALUES (?, ?, ?);"
 
 	stmt, err := st.db.Prepare(sql)
@@ -42,7 +42,7 @@ func (st *KeyMysqlStorer) Insert(k storage.Key) (int64, error) {
 	return lastID, nil
 }
 
-func (st *KeyMysqlStorer) Update(k storage.Key) error {
+func (st *KeyMysqlStorer) Update(k storage.UpdateKey) error {
 	var (
 		sql      string = "UPDATE `keys` SET %s WHERE id = :id;"
 		fields   string
@@ -122,6 +122,27 @@ func (st *KeyMysqlStorer) Get(id int64) (*storage.Key, error) {
 	return key, nil
 }
 
+func (st *KeyMysqlStorer) GetByName(name string) (*storage.Key, error) {
+	sql := "SELECT id, `name`, `desc`, updated_at FROM `keys` WHERE `name` = ? LIMIT 1;"
+
+	rows, err := st.db.Queryx(sql, name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	key := new(storage.Key)
+	if err := rows.Scan(&key.ID, &key.Name, &key.Desc, &key.UpdatedAt); err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
 func (st *KeyMysqlStorer) Query(queries storage.QueryKey, sorts storage.SortKey) ([]*storage.Key, int64, error) {
 	var (
 		sql      string = "SELECT id, `name`, `desc`, updated_at FROM `keys` %s ORDER BY %s LIMIT :offset, :limit;"
@@ -161,7 +182,7 @@ func (st *KeyMysqlStorer) Query(queries storage.QueryKey, sorts storage.SortKey)
 		wherePrefix = " AND "
 	}
 
-	if queries.To.IsZero() {
+	if !queries.To.IsZero() {
 		filter["to"] = queries.To
 		where += wherePrefix + "updated_at <= :to"
 		wherePrefix = " AND "

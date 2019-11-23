@@ -13,6 +13,20 @@ type Bunch struct {
 	UpdatedAt time.Time
 }
 
+//CreateBunch model
+type CreateBunch struct {
+	Name string
+	Desc string
+}
+
+//UpdateBunch model
+type UpdateBunch struct {
+	ID     int64
+	Name   string
+	Desc   string
+	Active Boolean
+}
+
 //QueryBunch model
 type QueryBunch struct {
 	Limit  int64
@@ -65,8 +79,8 @@ type AggregateBunchKey struct {
 
 //BunchStorer defines fundamental functions to interact with storage repository
 type BunchStorer interface {
-	Insert(b Bunch) (*Bunch, error)
-	Update(b Bunch) (*Bunch, error)
+	Insert(b CreateBunch) (*Bunch, error)
+	Update(b UpdateBunch) (*Bunch, error)
 	Get(id int64) (*Bunch, error)
 	GetByName(name string) (*Bunch, error)
 	Query(queries QueryBunch, sorts SortBunch) ([]*Bunch, int64, error)

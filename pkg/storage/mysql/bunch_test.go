@@ -15,7 +15,7 @@ func TestBunchMysqlStorer_Insert(t *testing.T) {
 		bunch := test.mig.createUniqueString("bunch")
 		desc := test.mig.createUniqueString("desc")
 
-		id, err := test.bst.Insert(storage.Bunch{Name: bunch, Desc: desc})
+		id, err := test.bst.Insert(storage.CreateBunch{Name: bunch, Desc: desc})
 		require.Nil(t, err)
 		require.NotZero(t, id)
 	})
@@ -31,7 +31,7 @@ func TestBunchMysqlStorer_Insert(t *testing.T) {
 			fields["desc"] = desc
 		})
 
-		id, err := test.bst.Insert(storage.Bunch{Name: bunch, Desc: desc})
+		id, err := test.bst.Insert(storage.CreateBunch{Name: bunch, Desc: desc})
 		require.NotNil(t, err)
 		require.Zero(t, id)
 	})
@@ -50,7 +50,7 @@ func TestBunchMysqlStorer_Update(t *testing.T) {
 			fields["desc"] = desc
 		})
 
-		err := test.bst.Update(storage.Bunch{ID: id, Name: bunch + "updated", Desc: desc,})
+		err := test.bst.Update(storage.UpdateBunch{ID: id, Name: bunch + "updated", Desc: desc,})
 		require.Nil(t, err)
 	})
 
@@ -65,7 +65,7 @@ func TestBunchMysqlStorer_Update(t *testing.T) {
 		})
 		id := test.mig.createSeedingBunch(nil)
 
-		err := test.bst.Update(storage.Bunch{ID: id, Name: bunch, Desc: desc})
+		err := test.bst.Update(storage.UpdateBunch{ID: id, Name: bunch, Desc: desc})
 		require.NotNil(t, err)
 	})
 }
