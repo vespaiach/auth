@@ -2,10 +2,11 @@ package mysql
 
 import (
 	"github.com/stretchr/testify/require"
+	"github.com/vespaiach/auth/pkg/storage"
 	"testing"
 )
 
-func TestStorage_AddServiceKey(t *testing.T) {
+func TestKeyMysqlStorer_Insert(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success_add_a_key", func(t *testing.T) {
@@ -14,7 +15,7 @@ func TestStorage_AddServiceKey(t *testing.T) {
 		key := test.mig.createUniqueString("key")
 		desc := test.mig.createUniqueString("desc")
 
-		id, err := test.kst.AddKey(key, desc)
+		id, err := test.kst.Insert(storage.Key{Name: key, Desc: desc})
 		require.Nil(t, err)
 		require.NotZero(t, id)
 	})
@@ -27,17 +28,17 @@ func TestStorage_AddServiceKey(t *testing.T) {
 		desc2 := test.mig.createUniqueString("desc")
 
 		test.mig.createSeedingServiceKey(func(fields map[string]interface{}) {
-			fields["key"] = key
+			fields["name"] = key
 			fields["desc"] = desc1
 		})
 
-		dupID, errDup := test.kst.AddKey(key, desc2)
+		dupID, errDup := test.kst.Insert(storage.Key{Name: key, Desc: desc2})
 		require.NotNil(t, errDup)
 		require.Zero(t, dupID)
 	})
 }
 
-func TestStorage_ModifyServiceKey(t *testing.T) {
+func TestKeyMysqlStorer_Update(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success_update_a_key", func(t *testing.T) {
@@ -47,11 +48,47 @@ func TestStorage_ModifyServiceKey(t *testing.T) {
 		key := test.mig.createUniqueString("key")
 		desc := test.mig.createUniqueString("desc")
 
-		err := test.kst.ModifyKey(id, key, desc)
+		err := test.kst.Update(storage.Key{
+			ID:   id,
+			Name: key,
+			Desc: desc,
+		})
 		require.Nil(t, err)
+	})
+}
 
-		updatedKey, updatedDesc := test.mig.getServiceKeyByID(id)
-		require.Equal(t, updatedDesc, desc)
-		require.Equal(t, updatedKey, key)
+func TestKeyMysqlStorer_Delete(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_delete_a_key", func(t *testing.T) {
+		t.Parallel()
+
+		id := test.mig.createSeedingServiceKey(nil)
+
+		err := test.kst.Delete(id)
+		require.Nil(t, err)
+	})
+}
+
+func TestKeyMysqlStorer_Get(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_delete_a_key", func(t *testing.T) {
+		t.Parallel()
+
+		key := test.mig.createUniqueString("key")
+		desc := test.mig.createUniqueString("desc")
+
+		id := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) {
+			fields["name"] = key
+			fields["desc"] = desc
+		})
+
+		found, err := test.kst.Get(id)
+		require.Nil(t, err)
+		require.NotNil(t, found)
+		require.Equal(t, found.ID, id)
+		require.Equal(t, found.Name, key)
+		require.Equal(t, found.Desc, desc)
 	})
 }

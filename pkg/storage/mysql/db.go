@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type uniqInt struct {
@@ -103,15 +104,16 @@ func santizeSQL(sql string) string {
 
 func (m *Migrator) createSeedingServiceKey(beforeCreate func(map[string]interface{})) int64 {
 	fields := map[string]interface{}{
-		"key":  fmt.Sprintf("key_%s", strconv.Itoa(inc.New())),
-		"desc": fmt.Sprintf("desc_%s", strconv.Itoa(inc.New())),
+		"name":       fmt.Sprintf("name_%s", strconv.Itoa(inc.New())),
+		"desc":       fmt.Sprintf("desc_%s", strconv.Itoa(inc.New())),
+		"updated_at": time.Now(),
 	}
 
 	if beforeCreate != nil {
 		beforeCreate(fields)
 	}
 
-	result, _ := m.db.NamedExec("INSERT INTO `keys` (`key`, `desc`) VALUES (:key, :desc);", fields)
+	result, _ := m.db.NamedExec("INSERT INTO `keys` (`name`, `desc`, updated_at) VALUES (:name, :desc, :updated_at);", fields)
 	id, _ := result.LastInsertId()
 
 	return id

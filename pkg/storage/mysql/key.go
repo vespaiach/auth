@@ -2,35 +2,34 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/vespaiach/auth/pkg/common"
-	"github.com/vespaiach/auth/pkg/keymgr"
 	"sync"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/vespaiach/auth/pkg/storage"
 )
 
-// KeyStorage implements db's storage for key
-type KeyStorage struct {
+// KeyMysqlStorer implements key's storages in mysql db
+type KeyMysqlStorer struct {
 	db *sqlx.DB
 }
 
-// NewKeyStorage create new instance of KeyStorage
-func NewKeyStorage(db *sqlx.DB) *KeyStorage {
-	return &KeyStorage{
+// KeyMysqlStorer creates a new instance of KeyMysqlStorer
+func NewKeyMysqlStorer(db *sqlx.DB) *KeyMysqlStorer {
+	return &KeyMysqlStorer{
 		db,
 	}
 }
 
-var sqlCreateKey = "INSERT INTO `keys` (`key`, `desc`, created_at, updated_at) VALUES (?, ?, ?, ?);"
+func (st *KeyMysqlStorer) Insert(k storage.Key) (int64, error) {
+	sql := "INSERT INTO `keys` (`name`, `desc`, updated_at) VALUES (?, ?, ?);"
 
-func (st *KeyStorage) AddKey(name string, desc string) (int64, error) {
-	stmt, err := st.db.Prepare(sqlCreateKey)
+	stmt, err := st.db.Prepare(sql)
 	if err != nil {
 		return 0, err
 	}
 
-	now := time.Now()
-	res, err := stmt.Exec(name, desc, now, now)
+	res, err := stmt.Exec(k.Name, k.Desc, time.Now())
 	if err != nil {
 		return 0, err
 	}
@@ -43,144 +42,152 @@ func (st *KeyStorage) AddKey(name string, desc string) (int64, error) {
 	return lastID, nil
 }
 
-var sqlGetKeyByName = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` WHERE `key` = ? LIMIT 1;"
+func (st *KeyMysqlStorer) Update(k storage.Key) error {
+	var (
+		sql      string = "UPDATE `keys` SET %s WHERE id = :id;"
+		fields   string
+		prefix   string
+		updating = make(map[string]interface{})
+	)
 
-func (st *KeyStorage) GetKeyByName(name string) (*keymgr.Key, error) {
-	rows, err := st.db.Queryx(sqlGetKeyByName, name)
-	if err != nil {
-		return nil, err
+	if len(k.Name) > 0 {
+		fields += prefix + " `name` = :name "
+		prefix = ","
+		updating["name"] = k.Name
 	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, nil
-	}
-
-	key := new(keymgr.Key)
-	if err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt); err != nil {
-		return nil, err
-	}
-
-	return key, nil
-}
-
-var sqlGetKeyByID = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` WHERE id = ? LIMIT 1;"
-
-func (st *KeyStorage) GetKey(id int64) (*keymgr.Key, error) {
-	rows, err := st.db.Queryx(sqlGetKeyByID, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, nil
+	if len(k.Desc) > 0 {
+		fields += prefix + " `desc` = :desc "
+		updating["desc"] = k.Desc
 	}
 
-	key := new(keymgr.Key)
-	if err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt); err != nil {
-		return nil, err
-	}
+	if len(updating) > 0 {
+		fields += prefix + " updated_at = :updated_at "
+		updating["updated_at"] = time.Now()
+		updating["id"] = k.ID
 
-	return key, nil
-}
-
-var sqlGetBunchID = "SELECT id FROM `bunches` WHERE `name` = ? LIMIT 1;"
-
-func (st *KeyStorage) GetBunchID(name string) (int64, error) {
-	rows, err := st.db.Queryx(sqlGetBunchID, name)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return 0, nil
-	}
-
-	var id int64
-	if err := rows.Scan(&id); err != nil {
-		return 0, err
-	}
-
-	return id, nil
-}
-
-var sqlUpdateKeys = "UPDATE `keys` SET `key` = :key, `desc` = :desc, updated_at = :updated_at WHERE `keys`.id = :id;"
-
-func (st *KeyStorage) ModifyKey(id int64, name string, desc string) error {
-	updating := map[string]interface{}{
-		"key":        name,
-		"desc":       desc,
-		"id":         id,
-		"updated_at": time.Now(),
-	}
-
-	_, err := st.db.NamedExec(sqlUpdateKeys, updating)
-	if err != nil {
-		return err
+		_, err := st.db.NamedExec(fmt.Sprintf(sql, fields), updating)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-var sqlAddKeyToBunch = "INSERT INTO `bunch_keys` (bunch_id, key_id, created_at) VALUES (:bunch_id, :key_id, :created_at);"
+func (st *KeyMysqlStorer) Delete(id int64) error {
+	sqlbunchkey := "DELETE FROM `bunch_keys` WHERE key_id=:id"
+	sqlkey := "DELETE FROM `keys` WHERE id=:id"
+	deleting := map[string]interface{}{"id": id}
 
-func (st *KeyStorage) AddKeyToBunch(keyID int64, bunchID int64) (int64, error) {
-	updating := map[string]interface{}{
-		"bunch_id":   bunchID,
-		"key_id":     keyID,
-		"created_at": time.Now(),
-	}
-
-	res, err := st.db.NamedExec(sqlAddKeyToBunch, updating)
+	tx, err := st.db.Beginx()
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	lastID, err := res.LastInsertId()
+	_, err = tx.NamedExec(sqlbunchkey, deleting)
 	if err != nil {
-		return 0, err
+		tx.Rollback()
+		return err
 	}
 
-	return lastID, nil
+	_, err = tx.NamedExec(sqlkey, deleting)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
 }
 
-var sqlQueryKeys = "SELECT id, `key`, `desc`, created_at, updated_at FROM `keys` %s ORDER BY %s LIMIT :offset, :limit;"
-var sqlQueryKeysCounter = "SELECT count(id) FROM `keys` %s;"
+func (st *KeyMysqlStorer) Get(id int64) (*storage.Key, error) {
+	sql := "SELECT id, `name`, `desc`, updated_at FROM `keys` WHERE id = ? LIMIT 1;"
 
-func (st *KeyStorage) QueryKeys(take int64, skip int64, name string, sortby string,
-	direction common.SortingDirection) ([]*keymgr.Key, int64, error) {
+	rows, err := st.db.Queryx(sql, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	key := new(storage.Key)
+	if err := rows.Scan(&key.ID, &key.Name, &key.Desc, &key.UpdatedAt); err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+func (st *KeyMysqlStorer) Query(queries storage.QueryKey, sorts storage.SortKey) ([]*storage.Key, int64, error) {
 	var (
+		sql      string = "SELECT id, `name`, `desc`, updated_at FROM `keys` %s ORDER BY %s LIMIT :offset, :limit;"
+		sqlcount string = "SELECT count(id) FROM `keys` %s;"
+
+		orderPrefix   string
 		order         string
+		wherePrefix   = "WHERE "
 		where         string
-		sql           string
-		filter        map[string]interface{}
 		wg            sync.WaitGroup
 		queryErr      error
 		countTotalErr error
-		results       []*keymgr.Key
+		results       []*storage.Key
 		total         int64
 	)
 
-	filter = make(map[string]interface{})
-
-	if len(name) > 0 {
-		where = "WHERE `key` LIKE :name"
-		filter["name"] = "%" + name + "%"
+	filter := map[string]interface{}{"limit": queries.Limit, "offset": queries.Offset}
+	if queries.Limit == 0 {
+		filter["queries"] = storage.DefaultLimit
 	}
 
-	if direction == common.Descending {
-		order = fmt.Sprintf("`%s` DESC, id", sortby)
-	} else {
-		order = fmt.Sprintf("`%s` ASC, id", sortby)
+	if len(queries.Name) > 0 {
+		filter["name"] = "%" + queries.Name + "%"
+		where += wherePrefix + "`name` LIKE :name"
+		wherePrefix = " AND "
 	}
 
-	sql = fmt.Sprintf(sqlQueryKeys, where, order)
+	if len(queries.Desc) > 0 {
+		filter["desc"] = "%" + queries.Desc + "%"
+		where += wherePrefix + "`desc` LIKE :desc"
+		wherePrefix = " AND "
+	}
 
-	filter["offset"] = skip
-	filter["limit"] = take
+	if !queries.From.IsZero() {
+		filter["from"] = queries.From
+		where += wherePrefix + "updated_at > :from"
+		wherePrefix = " AND "
+	}
+
+	if queries.To.IsZero() {
+		filter["to"] = queries.To
+		where += wherePrefix + "updated_at <= :to"
+		wherePrefix = " AND "
+	}
+
+	if sorts.Name != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`name` %s", getOrderDirection(sorts.Name))
+		orderPrefix = " , "
+	}
+
+	if sorts.Desc != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`desc` %s", getOrderDirection(sorts.Desc))
+		orderPrefix = " , "
+	}
+
+	if sorts.UpdatedAt != storage.BiDirection {
+		order += orderPrefix + fmt.Sprintf("`updated_at` %s", getOrderDirection(sorts.UpdatedAt))
+		orderPrefix = " , "
+	}
+
+	if len(order) == 0 {
+		order = "id DESC"
+	}
+
+	sql = fmt.Sprintf(sql, where, order)
+	sqlcount = fmt.Sprintf(sqlcount, where)
 
 	wg.Add(1)
 	go func() {
@@ -192,10 +199,10 @@ func (st *KeyStorage) QueryKeys(take int64, skip int64, name string, sortby stri
 		}
 		defer rows.Close()
 
-		results = make([]*keymgr.Key, 0, take)
+		results = make([]*storage.Key, 0, queries.Limit)
 		for rows.Next() {
-			key := new(keymgr.Key)
-			err := rows.Scan(&key.ID, &key.Key, &key.Desc, &key.CreatedAt, &key.UpdatedAt)
+			key := new(storage.Key)
+			err := rows.Scan(&key.ID, &key.Name, &key.Desc, &key.UpdatedAt)
 			if err != nil {
 				queryErr = err
 				return
@@ -213,7 +220,7 @@ func (st *KeyStorage) QueryKeys(take int64, skip int64, name string, sortby stri
 	go func() {
 		defer wg.Done()
 
-		rows, err := st.db.NamedQuery(fmt.Sprintf(sqlQueryKeysCounter, where), filter)
+		rows, err := st.db.NamedQuery(sqlcount, filter)
 		if err != nil {
 			countTotalErr = err
 			return

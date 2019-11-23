@@ -3,23 +3,21 @@ package mysql
 var initDatabase = `
 CREATE TABLE IF NOT EXISTS "keys" (
   	"id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-	"key" VARCHAR(32) NOT NULL DEFAULT '',
-	"desc" VARCHAR(64) NOT NULL DEFAULT '',
-  	"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  	"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	"name" VARCHAR(32) NOT NULL,
+	"desc" VARCHAR(64) NOT NULL,
+	"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id"),
-  UNIQUE INDEX "keys_key_uniq" ("key" ASC))
+  UNIQUE INDEX "keys_key_uniq" ("name" ASC))
 ENGINE = InnoDB
 AUTO_INCREMENT = 1
 DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS "bunches" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  "name" VARCHAR(32) NOT NULL DEFAULT '',
-  "desc" VARCHAR(64) NOT NULL DEFAULT '',
-  "active" TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  "name" VARCHAR(32) NOT NULL,
+  "desc" VARCHAR(64) NOT NULL,
+  "active" TINYINT(1) UNSIGNED NOT NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id"),
   UNIQUE INDEX "bunch_name_uniq" ("name" ASC),
   INDEX "bunch_active_idx" ("active" ASC))
@@ -61,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "bunch_keys" (
   "id" BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   "bunch_id" BIGINT(20) UNSIGNED NOT NULL,
   "key_id" BIGINT(20) UNSIGNED NOT NULL,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("id"),
   INDEX "bunch_key_key_id_idx" ("key_id" ASC),
   INDEX "bunch_key_bunch_id_idx" ("bunch_id" ASC),
@@ -110,20 +108,21 @@ DROP TABLE IF EXISTS "bunches";
 DROP TABLE IF EXISTS "users";
 DROP TABLE IF EXISTS "token_histories";
 `
+
 // default password: "password"
 var seedingData = `
-INSERT INTO "keys" (id, "key", "desc") VALUES (1, 'add_key', 'Add a key');
-INSERT INTO "keys" (id, "key", "desc") VALUES (2, 'modify_key', 'modify a key');
-INSERT INTO "keys" (id, "key", "desc") VALUES (3, 'get_key', 'get a key');
-INSERT INTO "keys" (id, "key", "desc") VALUES (4, 'query_key', 'list key');
-INSERT INTO "keys" (id, "key", "desc") VALUES (5 ,'add_bunch', 'Add bunch');
-INSERT INTO "keys" (id, "key", "desc") VALUES (6, 'modify_bunch', 'Modify bunch');
-INSERT INTO "keys" (id, "key", "desc") VALUES (7, 'get_bunch', 'Get bunch');
-INSERT INTO "keys" (id, "key", "desc") VALUES (8, 'query_bunch', 'Query bunches');
-INSERT INTO "keys" (id, "key", "desc") VALUES (9, 'add_user', 'add_user');
-INSERT INTO "keys" (id, "key", "desc") VALUES (10 ,'modify_user', 'modify_user');
-INSERT INTO bunches (id, "name", "desc") VALUES (1, 'admin_role', 'Admin role');
-INSERT INTO bunches (id, "name", "desc") VALUES (2, 'staff_role', 'Staff role');
+INSERT INTO "keys" (id, "name", "desc") VALUES (1, 'add_key', 'Add a key');
+INSERT INTO "keys" (id, "name", "desc") VALUES (2, 'modify_key', 'modify a key');
+INSERT INTO "keys" (id, "name", "desc") VALUES (3, 'get_key', 'get a key');
+INSERT INTO "keys" (id, "name", "desc") VALUES (4, 'query_key', 'list key');
+INSERT INTO "keys" (id, "name", "desc") VALUES (5 ,'add_bunch', 'Add bunch');
+INSERT INTO "keys" (id, "name", "desc") VALUES (6, 'modify_bunch', 'Modify bunch');
+INSERT INTO "keys" (id, "name", "desc") VALUES (7, 'get_bunch', 'Get bunch');
+INSERT INTO "keys" (id, "name", "desc") VALUES (8, 'query_bunch', 'Query bunches');
+INSERT INTO "keys" (id, "name", "desc") VALUES (9, 'add_user', 'add_user');
+INSERT INTO "keys" (id, "name", "desc") VALUES (10 ,'modify_user', 'modify_user');
+INSERT INTO bunches (id, "name", "desc", "active") VALUES (1, 'admin_role', 'Admin role', 1);
+INSERT INTO bunches (id, "name", "desc", "active") VALUES (2, 'staff_role', 'Staff role', 1);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (1, 1, 1);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (2, 1, 2);
 INSERT INTO bunch_keys (id, bunch_id, key_id) VALUES (3, 1, 3);

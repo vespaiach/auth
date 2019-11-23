@@ -1,13 +1,12 @@
 package mysql
 
 import (
-	"database/sql"
 	"github.com/stretchr/testify/require"
-	"github.com/vespaiach/auth/pkg/common"
+	"github.com/vespaiach/auth/pkg/storage"
 	"testing"
 )
 
-func TestBunchStorage_AddBunch(t *testing.T) {
+func TestBunchMysqlStorer_Insert(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success_add_a_bunch", func(t *testing.T) {
@@ -16,7 +15,7 @@ func TestBunchStorage_AddBunch(t *testing.T) {
 		bunch := test.mig.createUniqueString("bunch")
 		desc := test.mig.createUniqueString("desc")
 
-		id, err := test.bst.AddBunch(bunch, desc)
+		id, err := test.bst.Insert(storage.Bunch{Name: bunch, Desc: desc})
 		require.Nil(t, err)
 		require.NotZero(t, id)
 	})
@@ -32,13 +31,66 @@ func TestBunchStorage_AddBunch(t *testing.T) {
 			fields["desc"] = desc
 		})
 
-		id, err := test.bst.AddBunch(bunch, desc)
+		id, err := test.bst.Insert(storage.Bunch{Name: bunch, Desc: desc})
 		require.NotNil(t, err)
 		require.Zero(t, id)
 	})
 }
 
-func TestBunchStorage_GetBunchByName(t *testing.T) {
+func TestBunchMysqlStorer_Update(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_update_a_bunch", func(t *testing.T) {
+		t.Parallel()
+
+		bunch := test.mig.createUniqueString("bunch")
+		desc := test.mig.createUniqueString("desc")
+		id := test.mig.createSeedingBunch(func(fields map[string]interface{}) {
+			fields["name"] = bunch
+			fields["desc"] = desc
+		})
+
+		err := test.bst.Update(storage.Bunch{ID: id, Name: bunch + "updated", Desc: desc,})
+		require.Nil(t, err)
+	})
+
+	t.Run("fail_update_a_duplicated_bunch", func(t *testing.T) {
+		t.Parallel()
+
+		bunch := test.mig.createUniqueString("bunch")
+		desc := test.mig.createUniqueString("desc")
+		test.mig.createSeedingBunch(func(fields map[string]interface{}) {
+			fields["name"] = bunch
+			fields["desc"] = desc
+		})
+		id := test.mig.createSeedingBunch(nil)
+
+		err := test.bst.Update(storage.Bunch{ID: id, Name: bunch, Desc: desc})
+		require.NotNil(t, err)
+	})
+}
+
+func TestBunchMysqlStorer_Get(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_get_a_bunch_by_id", func(t *testing.T) {
+		t.Parallel()
+
+		name := test.mig.createUniqueString("bunch")
+
+		id := test.mig.createSeedingBunch(func(fields map[string]interface{}) {
+			fields["name"] = name
+		})
+
+		bunch, err := test.bst.Get(id)
+		require.Nil(t, err)
+		require.NotNil(t, bunch)
+		require.Equal(t, id, bunch.ID)
+		require.Equal(t, name, bunch.Name)
+	})
+}
+
+func TestBunchMysqlStorer_GetByName(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success_get_a_bunch_by_name", func(t *testing.T) {
@@ -50,173 +102,137 @@ func TestBunchStorage_GetBunchByName(t *testing.T) {
 			fields["name"] = name
 		})
 
-		bunch, err := test.bst.GetBunchByName(name)
+		bunch, err := test.bst.GetByName(name)
 		require.Nil(t, err)
 		require.NotNil(t, bunch)
 		require.Equal(t, id, bunch.ID)
 	})
 }
 
-func TestBunchStorage_GetBunch(t *testing.T) {
+func TestBunchMysqlStorer_Query(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success_get_a_bunch", func(t *testing.T) {
+	t.Run("success_query_bunches", func(t *testing.T) {
 		t.Parallel()
 
-		name := test.mig.createUniqueString("bunch")
-
-		id := test.mig.createSeedingBunch(func(fields map[string]interface{}) {
-			fields["name"] = name
-		})
-
-		bunch, err := test.bst.GetBunch(id)
-		require.Nil(t, err)
-		require.NotNil(t, bunch)
-		require.Equal(t, name, bunch.Name)
-	})
-}
-
-func TestBunchStorage_ModifyBunch(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success_modify_a_bunch", func(t *testing.T) {
-		t.Parallel()
-
-		id := test.mig.createSeedingBunch(nil)
-		name := test.mig.createUniqueString("name")
-		desc := test.mig.createUniqueString("desc")
-
-		err := test.bst.ModifyBunch(id, name, desc, sql.NullBool{
-			Valid: true,
-			Bool:  false,
-		})
-		require.Nil(t, err)
-
-		bname, bdesc, bactive := test.mig.getBunchByID(id)
-		require.Equal(t, name, bname)
-		require.Equal(t, desc, bdesc)
-		require.False(t, bactive)
-	})
-}
-
-func TestBunchStorage_QueryBunches(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success_modify_a_bunch", func(t *testing.T) {
-		t.Parallel()
-
-		name1 := test.mig.createUniqueString("tname")
-		name2 := test.mig.createUniqueString("tname")
-		name3 := test.mig.createUniqueString("tname")
-		name4 := test.mig.createUniqueString("tname")
-		name5 := test.mig.createUniqueString("tname")
-		name6 := test.mig.createUniqueString("tname")
+		prefix := test.mig.createUniqueString("prefix")
+		name1 := test.mig.createUniqueString(prefix)
+		name2 := test.mig.createUniqueString(prefix)
+		name3 := test.mig.createUniqueString(prefix)
+		name4 := test.mig.createUniqueString(prefix)
+		name5 := test.mig.createUniqueString(prefix)
+		name6 := test.mig.createUniqueString(prefix)
+		name7 := test.mig.createUniqueString(prefix)
 
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name1 })
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name2 })
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name3 })
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name4 })
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name5 })
+		test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name6 })
 		test.mig.createSeedingBunch(func(fields map[string]interface{}) {
-			fields["name"] = name6
+			fields["name"] = name7
 			fields["active"] = false
 		})
 
-		rows, total, err := test.bst.QueryBunches(2, 2, "tname", sql.NullBool{Valid: false}, "created_at", common.Ascending)
+		bunches, total, err := test.bst.Query(storage.QueryBunch{
+			Limit:  2,
+			Offset: 2,
+			Name:   prefix,
+			Active: storage.Boolean{IsSet: true, Bool: true},
+		}, storage.SortBunch{})
 		require.Nil(t, err)
-		require.NotNil(t, rows)
+		require.NotNil(t, bunches)
 		require.Equal(t, int64(6), total)
-		require.Len(t, rows, 2)
+		require.Len(t, bunches, 2)
+	})
+}
 
-		rows, total, err = test.bst.QueryBunches(2, 2, "tname", sql.NullBool{Valid: true, Bool: true}, "created_at", common.Ascending)
+func TestBunchKeyMysqlStorer_Insert(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_insert_a_bunch_key", func(t *testing.T) {
+		t.Parallel()
+
+		bunchID := test.mig.createSeedingBunch(nil)
+		keyID := test.mig.createSeedingServiceKey(nil)
+
+		id, err := test.bkst.Insert(storage.BunchKey{BunchID: bunchID, KeyID: keyID})
+		require.Nil(t, err)
+		require.NotZero(t, id)
+	})
+
+	t.Run("fail_insert_a_bunch_key", func(t *testing.T) {
+		t.Parallel()
+
+		id, err := test.bkst.Insert(storage.BunchKey{BunchID: -1, KeyID: -2})
+		require.NotNil(t, err)
+		require.Zero(t, id)
+	})
+}
+
+func TestBunchKeyMysqlStorer_Delete(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_delete_a_bunch_key", func(t *testing.T) {
+		t.Parallel()
+
+		bunchID := test.mig.createSeedingBunch(nil)
+		keyID := test.mig.createSeedingServiceKey(nil)
+
+		id, err := test.bkst.Insert(storage.BunchKey{BunchID: bunchID, KeyID: keyID})
+		require.Nil(t, err)
+		require.NotZero(t, id)
+
+		err = test.bkst.Delete(id)
+		require.Nil(t, err)
+	})
+}
+
+func TestBunchKeyMysqlStorer_Query(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success_query_bunch_keys", func(t *testing.T) {
+		t.Parallel()
+		prefix := test.mig.createUniqueString("pre")
+		name1 := test.mig.createUniqueString(prefix)
+		name2 := test.mig.createUniqueString(prefix)
+		name3 := test.mig.createUniqueString(prefix)
+		name4 := test.mig.createUniqueString(prefix)
+		name5 := test.mig.createUniqueString(prefix)
+		name6 := test.mig.createUniqueString(prefix)
+
+		bunchID1 := test.mig.createSeedingBunch(func(fields map[string]interface{}) { fields["name"] = name1 })
+
+		keyID1 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["name"] = name3 })
+		keyID2 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["name"] = name4 })
+		keyID3 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["name"] = name5 })
+		keyID4 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["name"] = name6 })
+		keyID5 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["name"] = name2 })
+
+		_, err := test.bkst.Insert(storage.BunchKey{BunchID: bunchID1, KeyID: keyID1})
+		require.Nil(t, err)
+
+		_, err = test.bkst.Insert(storage.BunchKey{BunchID: bunchID1, KeyID: keyID2})
+		require.Nil(t, err)
+
+		_, err = test.bkst.Insert(storage.BunchKey{BunchID: bunchID1, KeyID: keyID3})
+		require.Nil(t, err)
+
+		_, err = test.bkst.Insert(storage.BunchKey{BunchID: bunchID1, KeyID: keyID4})
+		require.Nil(t, err)
+
+		_, err = test.bkst.Insert(storage.BunchKey{BunchID: bunchID1, KeyID: keyID5})
+		require.Nil(t, err)
+
+		rows, total, err := test.bkst.Query(storage.QueryBunchKey{
+			Limit:     2,
+			Offset:    1,
+			BunchName: name1,
+		}, storage.SortBunchKey{})
 		require.Nil(t, err)
 		require.NotNil(t, rows)
 		require.Equal(t, int64(5), total)
 		require.Len(t, rows, 2)
 	})
-}
-
-func TestBunchStorage_AddKeysToBunch(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success_keys_to_a_bunch", func(t *testing.T) {
-		t.Parallel()
-
-		kid1 := test.mig.createSeedingServiceKey(nil)
-		kid2 := test.mig.createSeedingServiceKey(nil)
-		kid3 := test.mig.createSeedingServiceKey(nil)
-		kid4 := test.mig.createSeedingServiceKey(nil)
-		bid := test.mig.createSeedingBunch(nil)
-
-		err := test.bst.AddKeysToBunch(bid, []int64{kid1, kid2, kid3, kid4})
-		require.Nil(t, err)
-
-		results := test.mig.getKeyIDByBunchID(bid)
-		require.NotNil(t, results)
-		require.Len(t, results, 4)
-	})
-}
-
-func TestBunchStorage_GetKeyInBunch(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success_get_keys_in_a_bunch", func(t *testing.T) {
-		t.Parallel()
-
-		name := test.mig.createUniqueString("bunch")
-		kid1 := test.mig.createSeedingServiceKey(nil)
-		kid2 := test.mig.createSeedingServiceKey(nil)
-		kid3 := test.mig.createSeedingServiceKey(nil)
-		kid4 := test.mig.createSeedingServiceKey(nil)
-		bid := test.mig.createSeedingBunch(func(field map[string]interface{}) {
-			field["name"] = name
-		})
-
-		err := test.bst.AddKeysToBunch(bid, []int64{kid1, kid2, kid3, kid4})
-		require.Nil(t, err)
-
-		keys, err := test.bst.GetKeysInBunch(name)
-		require.Nil(t, err)
-		require.NotNil(t, keys)
-		require.Len(t, keys, 4)
-	})
-}
-
-func TestBunchStorage_GetKeyIDs(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success_get_keys_in_a_bunch", func(t *testing.T) {
-		t.Parallel()
-
-		name1 := test.mig.createUniqueString("tname")
-		name2 := test.mig.createUniqueString("tname")
-		name3 := test.mig.createUniqueString("tname")
-		name4 := test.mig.createUniqueString("tname")
-		name5 := test.mig.createUniqueString("tname")
-
-		id1 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["key"] = name1 })
-		id2 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["key"] = name2 })
-		id3 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["key"] = name3 })
-		id4 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["key"] = name4 })
-		id5 := test.mig.createSeedingServiceKey(func(fields map[string]interface{}) { fields["key"] = name5 })
-
-		ids, err := test.bst.GetKeyIDs([]string{name1, name2, name3, name4, name5})
-		require.Nil(t, err)
-		require.NotNil(t, ids)
-		require.Len(t, ids, 5)
-		require.True(t, contains(ids, id1))
-		require.True(t, contains(ids, id2))
-		require.True(t, contains(ids, id3))
-		require.True(t, contains(ids, id4))
-		require.True(t, contains(ids, id5))
-	})
-}
-
-func contains(s []int64, e int64) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }

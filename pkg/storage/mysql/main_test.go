@@ -11,10 +11,11 @@ import (
 )
 
 type testApp struct {
-	mig *Migrator
-	kst *KeyStorage
-	bst *BunchStorage
-	ust *UserStorage
+	mig  *Migrator
+	kst  *KeyMysqlStorer
+	bst  *BunchMysqlStorer
+	bkst *BunchKeyMysqlStorer
+	ust  *UserStorage
 }
 
 var test *testApp
@@ -27,10 +28,11 @@ func TestMain(m *testing.M) {
 	}
 
 	test = &testApp{
-		mig: NewMigrator(db),
-		kst: NewKeyStorage(db),
-		bst: NewBunchStorage(db),
-		ust: NewUserStorage(db),
+		mig:  NewMigrator(db),
+		kst:  NewKeyMysqlStorer(db),
+		bst:  NewBunchMysqlStorer(db),
+		bkst: NewBunchKeyMysqlStorer(db),
+		ust:  NewUserStorage(db),
 	}
 
 	test.mig.Drop()
